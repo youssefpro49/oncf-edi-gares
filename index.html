@@ -1,0 +1,1076 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}</style>
+</head>
+<body>
+<title>EDI Gares ONCF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* Charte imposée par le cahier des charges : fond blanc, thème clair unique (choix délibéré) */
+:root{
+  color-scheme:light;
+  --white:#FFFFFF; --orange:#F26522; --orange-d:#D9531A; --orange-soft:#FDEBE1;
+  --ink:#1A1A1A; --ink-2:#555555; --muted:#7A7A7A;
+  --gray:#F5F5F5; --line:#E6E6E6; --line-2:#D6D6D6;
+  --red:#E30613; --red-soft:#FDE6E7; --green:#2EA736; --green-soft:#E5F5E6;
+  --amber-soft:#FFF1E0;
+  --radius:8px; --shadow:0 1px 2px rgba(26,26,26,.05),0 4px 14px rgba(26,26,26,.06);
+  --font:"Montserrat",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--white);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5}
+h1,h2,h3,h4{margin:0;font-weight:700;line-height:1.2;text-wrap:balance}
+h1{font-size:24px} h2{font-size:18px;font-weight:600} h3{font-size:15px;font-weight:600}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .ink2{color:var(--ink-2)}
+.label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+
+/* ---------- Bandeau & header ---------- */
+.band{background:var(--ink);color:#fff;font-size:11.5px;text-align:center;padding:5px 16px;letter-spacing:.02em}
+.hdr{background:var(--orange);color:#fff;display:flex;align-items:center;gap:14px;padding:10px 20px;position:sticky;top:env(safe-area-inset-top,0px);z-index:30}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:.01em;white-space:nowrap}
+.logo .mk{width:32px;height:32px;border-radius:7px;background:#fff;display:grid;place-items:center}
+.logo small{display:block;font-size:10.5px;font-weight:500;opacity:.9;letter-spacing:.04em}
+.hdr .who{font-size:12.5px;line-height:1.25;text-align:right}
+.hdr .who b{display:block;font-weight:600}
+.hdr select{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:6px;padding:6px 8px;font-weight:600;font-size:13px}
+.hdr select option{color:var(--ink)}
+.icon-btn{position:relative;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.45);color:#fff;border-radius:6px;height:34px;min-width:34px;display:grid;place-items:center;padding:0 8px;font-weight:600;font-size:13px}
+.icon-btn:hover{background:rgba(255,255,255,.26)}
+.icon-btn svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
+.badge-count{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font-size:10.5px;font-weight:700;border-radius:999px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 5px;border:2px solid var(--orange)}
+.pop{position:absolute;right:20px;top:56px;background:#fff;color:var(--ink);width:min(380px,calc(100vw - 32px));border-radius:var(--radius);box-shadow:0 10px 30px rgba(0,0,0,.18);border:1px solid var(--line);z-index:40;max-height:70vh;overflow:auto}
+.pop-h{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+
+/* ---------- Flux EDI ---------- */
+.flow-wrap{border-bottom:1px solid var(--line);background:var(--gray);overflow-x:auto}
+.flow{display:flex;align-items:center;gap:0;padding:10px 20px;min-width:max-content}
+.step{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--muted);padding:5px 10px;border-radius:999px;border:1px solid transparent;white-space:nowrap;transition:.25s}
+.step i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:10.5px;background:#fff;border:1px solid var(--line-2);color:var(--ink-2)}
+.step.on{color:var(--ink);background:#fff;border-color:var(--orange)}
+.step.on i{background:var(--orange);border-color:var(--orange);color:#fff}
+.step.pulse{background:var(--orange);color:#fff;border-color:var(--orange)}
+.step.pulse i{background:#fff;color:var(--orange)}
+.step.done i{background:var(--green);border-color:var(--green);color:#fff}
+.arrow{width:22px;height:2px;background:var(--line-2);position:relative;flex:none}
+.arrow::after{content:"";position:absolute;right:-1px;top:-3px;border:4px solid transparent;border-left-color:var(--line-2);border-right:0}
+.flow-note{font-size:11.5px;color:var(--ink-2);margin-left:14px;white-space:nowrap}
+
+/* ---------- Shell ---------- */
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:calc(100% - 130px)}
+.side{border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:4px;background:#fff}
+.side .grp{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:6px 10px 8px}
+.nav-btn{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:6px;font-weight:500;color:var(--ink-2);font-size:13.5px}
+.nav-btn svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8}
+.nav-btn:hover{background:var(--gray);color:var(--ink)}
+.nav-btn[aria-current="page"]{background:var(--orange-soft);color:var(--orange-d);font-weight:600}
+.nav-btn:focus-visible{outline:2px solid var(--orange)}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding:10px}
+.side-foot button{all:unset;cursor:pointer;font-size:12px;color:var(--ink-2);text-decoration:underline;text-underline-offset:2px}
+.main{padding-inline:24px;padding-block:22px 60px;min-width:0;display:flex;flex-direction:column;gap:18px}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.page-h p{color:var(--ink-2);margin-top:4px;max-width:70ch}
+.crumb{font-size:12px;color:var(--muted);margin-bottom:4px}
+.crumb b{color:var(--orange-d);font-weight:600}
+
+/* ---------- Composants ---------- */
+.grid{display:grid;gap:16px}
+.g5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.g6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g-wide{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;min-width:0}
+.card.flat{box-shadow:none;background:var(--gray);border-color:transparent}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.kpi .v{font-size:28px;font-weight:700;margin-top:6px;line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:14px;font-weight:600;color:var(--ink-2)}
+.kpi .d{font-size:12px;color:var(--ink-2);margin-top:6px}
+.kpi.alert-k{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
+.up-bad{color:var(--red);font-weight:600} .up-good{color:var(--green);font-weight:600}
+
+.btn{border:1px solid var(--line-2);background:#fff;border-radius:7px;padding:8px 14px;font-weight:600;font-size:13px;color:var(--ink);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--orange);border-color:var(--orange);color:#fff}
+.btn.primary:hover{background:var(--orange-d);border-color:var(--orange-d)}
+.btn.ok{background:var(--green);border-color:var(--green);color:#fff}
+.btn.danger{color:var(--red);border-color:var(--red)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.link{all:unset;cursor:pointer;color:var(--orange-d);font-weight:600;font-size:12.5px}
+.link:hover{text-decoration:underline}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;letter-spacing:.01em}
+.pill.crit{background:var(--red);color:#fff}
+.pill.high{background:var(--orange-soft);color:var(--orange-d)}
+.pill.mid{background:var(--gray);color:var(--ink);border:1px solid var(--line-2)}
+.pill.low{background:#fff;color:var(--ink-2);border:1px solid var(--line-2)}
+.pill.ok{background:var(--green-soft);color:#1E7A25}
+.pill.new{background:#fff;color:var(--ink);border:1px solid var(--ink)}
+.pill.prog{background:var(--amber-soft);color:#A04A12}
+.pill.miss{background:#fff;color:var(--muted);border:1px dashed var(--muted);text-decoration:line-through}
+.pill.edi{background:var(--ink);color:#fff}
+
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:7px;overflow:hidden;background:#fff;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:6px 12px;font-size:12.5px;font-weight:500;color:var(--ink-2)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--orange);color:#fff;font-weight:600}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:8px 12px;font-weight:600;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--orange)}
+
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius)}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{background:var(--gray);text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);padding:9px 12px;white-space:nowrap;border-bottom:1px solid var(--line)}
+table.t th.sort{cursor:pointer;user-select:none}
+table.t th.sort:hover{color:var(--ink)}
+table.t th .arr{color:var(--orange)}
+table.t td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.t tr:last-child td{border-bottom:0}
+table.t td.r,table.t th.r{text-align:right;font-variant-numeric:tabular-nums}
+table.t tr.crit-row td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+table.t tr.high-row td:first-child{box-shadow:inset 3px 0 0 var(--orange)}
+.empty{padding:20px;text-align:center;color:var(--muted);font-size:13px}
+
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.form .full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label,.field .lab{font-size:12px;font-weight:600;color:var(--ink)}
+.field .hint{font-size:11.5px;color:var(--muted)}
+.field input,.field select,.field textarea{border:1px solid var(--line-2);border-radius:7px;padding:9px 11px;background:#fff;width:100%;min-width:0}
+.field textarea{min-height:90px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--orange);outline:none;box-shadow:0 0 0 3px var(--orange-soft)}
+.field.err input{border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+.radios{display:flex;gap:6px;flex-wrap:wrap}
+.radios label{display:flex;align-items:center;gap:6px;border:1px solid var(--line-2);border-radius:7px;padding:7px 11px;cursor:pointer;font-size:13px;font-weight:500}
+.radios input{accent-color:var(--orange);margin:0}
+.radios label:has(input:checked){border-color:var(--orange);background:var(--orange-soft)}
+.radios label.u-crit:has(input:checked){border-color:var(--red);background:var(--red-soft);color:var(--red)}
+.check{display:flex;gap:8px;align-items:center;font-size:13px}
+.check input{accent-color:var(--orange)}
+
+.banner{border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13.5px}
+.banner.warn{background:var(--amber-soft);border:1px solid #F7C9A6}
+.banner.crit{background:var(--red-soft);border:1px solid #F5A9AD}
+.banner.ok{background:var(--green-soft);border:1px solid #B5E0B8}
+.banner b{font-weight:700}
+
+.list{display:flex;flex-direction:column}
+.li{display:grid;grid-template-columns:4px 1fr auto;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);align-items:start}
+.li:last-child{border-bottom:0}
+.li .bar{align-self:stretch;border-radius:2px;background:var(--line-2)}
+.li .bar.crit{background:var(--red)} .li .bar.high{background:var(--orange)} .li .bar.ok{background:var(--green)} .li .bar.miss{background:repeating-linear-gradient(180deg,var(--muted) 0 3px,transparent 3px 6px)}
+.li b{font-weight:600;font-size:13.5px}
+.li small{display:block;color:var(--ink-2);font-size:12px;margin-top:1px}
+.li .meta{font-size:11.5px;color:var(--muted);text-align:right;white-space:nowrap}
+
+/* EDI */
+.edi-steps{display:flex;flex-direction:column;gap:8px}
+.edi-step{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;padding:8px 10px;border-radius:7px;background:var(--gray);font-size:13px}
+.edi-step .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#fff;border:1px solid var(--line-2);font-size:11px;font-weight:700;color:var(--ink-2)}
+.edi-step.run .dot{border-color:var(--orange);color:var(--orange);animation:spin 1s linear infinite;border-style:dashed}
+.edi-step.pass .dot{background:var(--green);border-color:var(--green);color:#fff}
+.edi-step.fail{background:var(--red-soft)}
+.edi-step.fail .dot{background:var(--red);border-color:var(--red);color:#fff}
+.edi-step small{display:block;color:var(--ink-2);font-size:12px}
+.edi-step.fail small{color:var(--red)}
+@keyframes spin{to{transform:rotate(360deg)}}
+pre.msg{background:var(--ink);color:#F5F5F5;border-radius:7px;padding:12px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.55;overflow:auto;max-height:260px;margin:0;white-space:pre}
+pre.msg .k{color:#F9A474}
+
+.chart-box{position:relative;height:240px}
+.chart-box.tall{height:280px}
+.chart-box.short{height:190px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.legend i.dash{background:repeating-linear-gradient(90deg,#8A8A8A 0 4px,transparent 4px 7px)!important}
+
+.rules{display:flex;flex-direction:column;gap:6px;font-size:12.5px}
+.rules div{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start}
+.decision{border:1px solid var(--orange);background:var(--orange-soft);border-radius:7px;padding:10px;display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-top:8px}
+.synth{background:var(--gray);border-radius:7px;padding:14px 16px;font-size:13px;white-space:pre-wrap;line-height:1.6}
+
+/* Connexion */
+.login{min-height:calc(100% - 28px);display:grid;place-items:center;padding-inline:16px;padding-block:32px;background:linear-gradient(180deg,var(--white) 0,var(--white) 55%,var(--gray) 55%)}
+.login-box{width:min(920px,100%);display:flex;flex-direction:column;gap:22px}
+.login-top{display:flex;align-items:center;gap:14px}
+.login-top .mk{width:52px;height:52px;border-radius:10px;background:var(--orange);display:grid;place-items:center;flex:none}
+.login-top h1{font-size:28px}
+.login-top p{color:var(--ink-2);margin-top:4px}
+.roles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.role{all:unset;cursor:pointer;background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;transition:.15s}
+.role:hover{border-color:var(--orange)}
+.role[aria-pressed="true"]{border-color:var(--orange);box-shadow:0 0 0 2px var(--orange)}
+.role:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.role .tag{align-self:flex-start;font-weight:700;font-size:12px;letter-spacing:.08em;background:var(--orange);color:#fff;padding:3px 9px;border-radius:5px}
+.role h3{font-size:17px}
+.role ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:2px}
+.login-form{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end;box-shadow:var(--shadow)}
+
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:calc(100% - 32px);display:flex;gap:8px;align-items:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast i{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
+
+@media (max-width:1180px){.g6{grid-template-columns:repeat(3,minmax(0,1fr))}.g5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:980px){
+  .g-wide,.g2{grid-template-columns:1fr}
+  .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .roles{grid-template-columns:1fr}
+  .login-form{grid-template-columns:1fr}
+  .decision{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .shell{grid-template-columns:1fr}
+  .side{position:fixed;left:0;right:0;bottom:0;z-index:35;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));gap:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+  .side .grp,.side-foot{display:none}
+  .nav-btn{flex:1;flex-direction:column;gap:2px;font-size:10px;padding:6px 2px;text-align:center;justify-content:center}
+  .nav-btn .long{display:none}
+  .main{padding-inline:16px;padding-block:16px 96px}
+  .hdr{padding:8px 16px;gap:8px;flex-wrap:wrap}
+  .hdr .who{display:none}
+  .logo small{display:none}
+  .flow{padding:8px 16px}
+  .flow-note{display:none}
+  .form{grid-template-columns:1fr}
+  .g6,.g5,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pop{right:16px}
+}
+@media (max-width:420px){.g4,.g6,.g5{grid-template-columns:1fr 1fr}.kpi .v{font-size:22px}.hdr select{max-width:130px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="band">Prototype académique · Master MITDO · données entièrement simulées · non affilié à l'ONCF</div>
+<div id="app"></div>
+<div class="toast" id="toast"><i></i><span></span></div>
+
+<script>
+/* =========================================================
+   EDI Gares — prototype SIO / SIG / SID
+   Tout est simulé côté navigateur : un "store" central joue le rôle
+   de la base centrale, et chaque saisie passe par une étape EDI.
+   ========================================================= */
+
+// ---------- utilitaires ----------
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const DAY = 864e5, HOUR = 36e5;
+const pad = n => String(n).padStart(2, '0');
+const dk = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const sod = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const fmtN = n => Math.round(n).toLocaleString('fr-FR');
+const fmtP = (x, d = 1) => isFinite(x) ? (x * 100).toFixed(d).replace('.', ',') + ' %' : '—';
+const fmtD = s => { const d = typeof s === 'string' ? new Date(s + 'T12:00') : new Date(s); return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }); };
+const fmtDT = t => { const d = new Date(t); return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const fmtHM = t => { const d = new Date(t); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const ago = t => { const m = Math.max(0, Math.round((Date.now() - t) / 60000)); if (m < 60) return `il y a ${m} min`; const h = Math.floor(m / 60); if (h < 48) return `il y a ${h} h ${pad(m % 60)}`; return `il y a ${Math.floor(h / 24)} j`; };
+const dur = h => h < 24 ? `${h.toFixed(1).replace('.', ',')} h` : `${(h / 24).toFixed(1).replace('.', ',')} j`;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function toast(t) { const el = $('#toast'); $('span', el).textContent = t; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2800); }
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+// ---------- référentiel ----------
+const STATIONS = [
+  { id: 'CV', code: 'CASAVOY', name: 'Casa-Voyageurs', voy: 42000, trains: 190, ret: .085, inc: .09, pan: .05 },
+  { id: 'RB', code: 'RABAGD', name: 'Rabat-Agdal', voy: 30000, trains: 150, ret: .07, inc: .07, pan: .04 },
+  { id: 'TG', code: 'TANGVIL', name: 'Tanger Ville', voy: 16000, trains: 70, ret: .05, inc: .05, pan: .03 },
+  { id: 'KN', code: 'KENITRA', name: 'Kénitra', voy: 14000, trains: 120, ret: .08, inc: .05, pan: .03 },
+  { id: 'MK', code: 'MEKNES', name: 'Meknès', voy: 9000, trains: 60, ret: .10, inc: .04, pan: .03 },
+  { id: 'FE', code: 'FESGAR', name: 'Fès', voy: 15000, trains: 70, ret: .105, inc: .06, pan: .04 },
+  { id: 'MR', code: 'MARRAK', name: 'Marrakech', voy: 18000, trains: 50, ret: .08, inc: .05, pan: .03 },
+  { id: 'OJ', code: 'OUJDA', name: 'Oujda', voy: 5000, trains: 24, ret: .12, inc: .03, pan: .025 },
+];
+const ST = Object.fromEntries(STATIONS.map(s => [s.id, s]));
+const URG = ['Faible', 'Moyenne', 'Haute', 'Critique'];
+const URG_CLS = { Faible: 'low', Moyenne: 'mid', Haute: 'high', Critique: 'crit' };
+const STATUTS = ['Nouveau', 'En cours', 'Résolu'];
+const STAT_CLS = { 'Nouveau': 'new', 'En cours': 'prog', 'Résolu': 'ok' };
+const INC_TYPES = {
+  'Sécurité': ['Chute d\'un voyageur sur le quai', 'Voyageur sur les voies signalé', 'Porte de train bloquée ouverte'],
+  'Sûreté': ['Bagage abandonné dans le hall', 'Altercation entre voyageurs', 'Intrusion en zone de service'],
+  'Malaise voyageur': ['Malaise d\'un voyageur en salle d\'attente', 'Voyageur blessé à l\'embarquement'],
+  'Affluence': ['Saturation du quai à l\'heure de pointe', 'File d\'attente importante aux guichets'],
+  'Signalisation': ['Défaut du signal d\'entrée en gare', 'Panne de l\'annonce sonore des voies'],
+  'Réclamation voyageur': ['Réclamation pour retard non annoncé', 'Réclamation sur l\'information voyageurs'],
+  'Propreté': ['Sanitaires hors service', 'Salissure importante sur le quai'],
+};
+const EQUIP = ['Escalator', 'Ascenseur', 'Afficheur voyageurs', 'Portique de contrôle', 'Distributeur de billets', 'Éclairage de quai', 'Aiguillage', 'Climatisation du hall', 'Sonorisation'];
+const LOCS = ['Hall principal', 'Quai 1', 'Quai 2', 'Quai 3', 'Quai 4', 'Passage souterrain', 'Parvis', 'Salle d\'attente'];
+const USERS = {
+  SIO: { id: 'dir.casa', name: 'M. El Amrani', title: 'Directeur de gare', gare: 'CV' },
+  SIG: { id: 'resp.exploitation', name: 'Mme Bennani', title: 'Responsable exploitation gares' },
+  SID: { id: 'direction.centrale', name: 'M. Tazi', title: 'Direction centrale' },
+};
+
+// ---------- génération des données simulées (déterministe) ----------
+function seed() {
+  const R = mulberry32(20260927), now = Date.now(), TODAY = sod(new Date());
+  const reports = [], incidents = [], pannes = [];
+  let ni = 1, np = 1;
+  const pick = a => a[Math.floor(R() * a.length)];
+  const urg = () => { const r = R(); return r < .35 ? 'Faible' : r < .7 ? 'Moyenne' : r < .9 ? 'Haute' : 'Critique'; };
+  const resH = u => ({ Faible: [12, 120], Moyenne: [6, 72], Haute: [3, 24], Critique: [.8, 6] }[u]);
+  for (let back = 179; back >= 0; back--) {
+    const d = new Date(TODAY); d.setDate(d.getDate() - back);
+    const key = dk(d), dow = d.getDay(), mon = d.getMonth();
+    const dowF = [1.12, .92, .9, .93, .97, 1.18, 1.0][dow];
+    const seas = [.9, .88, .95, 1, 1, 1.05, 1.25, 1.3, 1.05, .98, .95, 1.02][mon];
+    STATIONS.forEach(s => {
+      // aujourd'hui : 3 gares n'ont pas encore transmis (pour la démo)
+      const missing = back === 0 ? ['CV', 'OJ', 'MK'].includes(s.id) : R() < .035;
+      const trend = 1 + back / 180 * .25; // les retards baissent légèrement sur 6 mois
+      let rate = s.ret * trend * (.7 + R() * .6);
+      if (s.id === 'FE' && back <= 6) rate = .2 + R() * .06; // anomalie injectée : Fès cette semaine
+      if (!missing) {
+        const trains = Math.round(s.trains * (.94 + R() * .12));
+        const arr = Math.round(trains / 2 + (R() - .5) * 4), dep = trains - arr;
+        const ret = Math.min(trains, Math.round(trains * rate));
+        const min = ret ? Math.round(ret * (8 + R() * 14)) : 0;
+        const voy = Math.round(s.voy * dowF * seas * (.9 + R() * .2));
+        const ts = Math.min(now - 5 * 60000, d.getTime() + (19 * 3600 + R() * 3000) * 1000);
+        reports.push({ id: `RAP-${s.id}-${key.replace(/-/g, '')}`, gare: s.id, date: key, voy, trains, arr, dep, ret, min, ts, ack: 'ACK-' + Math.floor(R() * 9e5 + 1e5) });
+      }
+      const mk = (list, kind) => {
+        const ts = d.getTime() + (6 + R() * 16) * HOUR; if (ts > now - HOUR) return;
+        const u = urg(); const [a, b] = resH(u); const h = a + R() * (b - a);
+        const open = ts + h * HOUR > now;
+        const base = { gare: s.id, ts, urgence: u, statut: open ? (R() < .5 ? 'Nouveau' : 'En cours') : 'Résolu', resolvedAt: open ? null : ts + h * HOUR };
+        if (kind === 'inc') { const type = pick(Object.keys(INC_TYPES)); list.push({ id: `INC-${pad(ni++).padStart(4, '0')}`, type, description: pick(INC_TYPES[type]), ...base }); }
+        else { const e = pick(EQUIP); list.push({ id: `MNT-${pad(np++).padStart(4, '0')}`, equipement: e, localisation: pick(LOCS), description: `${e} : ${pick(['arrêt complet', 'fonctionnement intermittent', 'bruit anormal', 'affichage figé', 'défaut électrique'])}`, ...base }); }
+      };
+      if (R() < s.inc * (s.id === 'FE' && back <= 6 ? 2.5 : 1)) mk(incidents, 'inc');
+      if (R() < s.pan) mk(pannes, 'pan');
+    });
+  }
+  // cas récents fixés pour que la démo montre chaque type d'alerte
+  incidents.push({ id: `INC-${String(ni++).padStart(4, '0')}`, gare: 'CV', type: 'Sûreté', description: 'Bagage abandonné dans le hall principal, périmètre de sécurité établi', urgence: 'Critique', statut: 'En cours', ts: now - 2.7 * HOUR, resolvedAt: null });
+  incidents.push({ id: `INC-${String(ni++).padStart(4, '0')}`, gare: 'FE', type: 'Signalisation', description: 'Défaut du signal d\'entrée voie 2, circulation à vue', urgence: 'Haute', statut: 'En cours', ts: now - 5 * HOUR, resolvedAt: null });
+  incidents.push({ id: `INC-${String(ni++).padStart(4, '0')}`, gare: 'CV', type: 'Affluence', description: 'Saturation du quai 3 au départ du train de 18:05', urgence: 'Moyenne', statut: 'Résolu', ts: now - 26 * HOUR, resolvedAt: now - 25 * HOUR });
+  pannes.push({ id: `MNT-${String(np++).padStart(4, '0')}`, gare: 'RB', equipement: 'Escalator', localisation: 'Quai 1', description: 'Escalator à l\'arrêt, chaîne de marches bloquée', urgence: 'Critique', statut: 'Nouveau', ts: now - 6 * HOUR, resolvedAt: null });
+  pannes.push({ id: `MNT-${String(np++).padStart(4, '0')}`, gare: 'CV', equipement: 'Afficheur voyageurs', localisation: 'Hall principal', description: 'Afficheur des départs figé sur l\'écran 2', urgence: 'Moyenne', statut: 'En cours', ts: now - 22 * HOUR, resolvedAt: null });
+  return { v: 3, reports, incidents, pannes, decisions: [], seq: { inc: ni, pan: np, msg: 4200 }, seededAt: now };
+}
+
+// ---------- store (base centrale simulée) ----------
+const KEY = 'edi-gares-v3';
+let DB, UI = { role: null, view: 'dash', gare: 'all', period: 30, sort: { k: 'ret', d: -1 }, histTab: 'rap', histPer: 30, suivi: { kind: 'all', gare: 'all', statut: 'open', urg: 'all' }, sidPer: 30, alertF: 'open', ediFmt: 'json', pop: false, pendingRole: 'SIO' };
+function load() {
+  try { const raw = localStorage.getItem(KEY); if (raw) { const x = JSON.parse(raw); if (x.v === 3 && Date.now() - x.seededAt < 3 * DAY) { DB = x; } } } catch (e) { }
+  if (!DB) DB = seed();
+  try { const ui = JSON.parse(localStorage.getItem(KEY + '-ui') || 'null'); if (ui) Object.assign(UI, ui, { pop: false }); } catch (e) { }
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(DB)); localStorage.setItem(KEY + '-ui', JSON.stringify({ role: UI.role, view: UI.view })); } catch (e) { } }
+function resetDemo() { DB = seed(); save(); toast('Démo réinitialisée'); render(); }
+load();
+
+// ---------- requêtes ----------
+const todayKey = () => dk(new Date());
+const since = days => sod(new Date()).getTime() - (days - 1) * DAY;
+const inPer = (ts, days, offset = 0) => { const a = since(days) - offset * days * DAY; return ts >= a && ts < a + days * DAY; };
+const repTs = r => new Date(r.date + 'T12:00').getTime();
+function agg(gare, days, offset = 0) {
+  const g = x => gare === 'all' || x.gare === gare;
+  const reps = DB.reports.filter(r => g(r) && inPer(repTs(r), days, offset));
+  const inc = DB.incidents.filter(x => g(x) && inPer(x.ts, days, offset));
+  const pan = DB.pannes.filter(x => g(x) && inPer(x.ts, days, offset));
+  const s = k => reps.reduce((a, r) => a + r[k], 0);
+  const nG = gare === 'all' ? STATIONS.length : 1;
+  const resolved = [...inc, ...pan].filter(x => x.resolvedAt);
+  return {
+    voy: s('voy'), trains: s('trains'), ret: s('ret'), min: s('min'), rate: s('ret') / s('trains'),
+    inc: inc.length, incCrit: inc.filter(x => x.urgence === 'Critique').length, incOpen: inc.filter(x => x.statut !== 'Résolu').length,
+    pan: pan.length, panOpen: pan.filter(x => x.statut !== 'Résolu').length,
+    reps: reps.length, expected: nG * days, tx: reps.length / (nG * days),
+    delai: resolved.length ? resolved.reduce((a, x) => a + (x.resolvedAt - x.ts) / HOUR, 0) / resolved.length : NaN,
+  };
+}
+const todayReport = g => DB.reports.find(r => r.gare === g && r.date === todayKey());
+
+// ---------- moteur d'alertes & détection d'anomalies ----------
+function weeklyAnomaly(gare) {
+  // taux de retard des 7 derniers jours comparé aux 24 semaines précédentes (moyenne + 2 écarts-types)
+  const rate = off => { const a = agg(gare, 7, off); return a.trains ? a.rate : null; };
+  const cur = rate(0); const hist = []; for (let w = 1; w <= 24; w++) { const r = rate(w); if (r != null) hist.push(r); }
+  const m = hist.reduce((a, b) => a + b, 0) / hist.length;
+  const sd = Math.sqrt(hist.reduce((a, b) => a + (b - m) ** 2, 0) / hist.length);
+  return { cur, m, sd, z: (cur - m) / sd, anomaly: cur > m + 2 * sd };
+}
+function computeAlerts() {
+  const out = [], now = Date.now(), h = new Date().getHours();
+  DB.incidents.filter(x => x.statut !== 'Résolu' && x.urgence === 'Critique').forEach(x => {
+    const late = now - x.ts > 2 * HOUR;
+    out.push({ key: 'inc:' + x.id, sev: 'crit', cat: 'Incident critique', gare: x.gare, ts: x.ts, title: late ? `Incident critique non traité depuis plus de 2 h` : 'Incident critique déclaré', detail: `${x.id} · ${x.type} · ${x.description}`, go: 'suivi' });
+  });
+  DB.pannes.filter(x => x.statut !== 'Résolu' && (x.urgence === 'Critique' || x.urgence === 'Haute')).forEach(x => {
+    out.push({ key: 'pan:' + x.id, sev: x.urgence === 'Critique' ? 'crit' : 'high', cat: 'Panne urgente', gare: x.gare, ts: x.ts, title: `Panne ${x.urgence === 'Critique' ? 'urgente' : 'prioritaire'} : ${x.equipement}`, detail: `${x.id} · ${x.localisation} · ${x.description}`, go: 'suivi' });
+  });
+  STATIONS.forEach(s => {
+    if (!todayReport(s.id)) out.push({ key: `rap:${s.id}:${todayKey()}`, sev: h >= 20 ? 'crit' : 'miss', cat: 'Rapport non transmis', gare: s.id, ts: sod(new Date()).getTime() + 20 * HOUR, title: 'Rapport du jour non transmis', detail: h >= 20 ? 'Échéance de 20:00 dépassée' : 'Échéance aujourd\'hui à 20:00', go: 'rapport' });
+    const last = DB.reports.filter(r => r.gare === s.id).sort((a, b) => b.ts - a.ts)[0];
+    if (last && last.date >= dk(new Date(Date.now() - DAY)) && last.ret / last.trains > .15) out.push({ key: 'ret:' + last.id, sev: 'high', cat: 'Retards importants', gare: s.id, ts: last.ts, title: `Retards importants : ${fmtP(last.ret / last.trains)} des trains`, detail: `Rapport du ${fmtD(last.date)} · ${last.ret} trains en retard · ${fmtN(last.min)} min cumulées`, go: 'dash' });
+    const a = weeklyAnomaly(s.id);
+    if (a.anomaly) out.push({ key: `ano:${s.id}:${todayKey()}`, sev: 'high', cat: 'Anomalie détectée', gare: s.id, ts: now, title: `Anomalie : taux de retard hebdomadaire anormal`, detail: `7 derniers jours ${fmtP(a.cur)} contre ${fmtP(a.m)} en moyenne (seuil ${fmtP(a.m + 2 * a.sd)}, z = ${a.z.toFixed(1).replace('.', ',')})`, go: 'dash' });
+  });
+  const rank = { crit: 0, high: 1, miss: 2 };
+  out.forEach(a => a.decision = DB.decisions.find(d => d.key === a.key));
+  return out.sort((a, b) => rank[a.sev] - rank[b.sev] || b.ts - a.ts);
+}
+function alertsForRole() { const all = computeAlerts(); return UI.role === 'SIO' ? all.filter(a => a.gare === USERS.SIO.gare) : all; }
+const SEV_PILL = { crit: '<span class="pill crit">Critique</span>', high: '<span class="pill high">Important</span>', miss: '<span class="pill miss">Non transmis</span>' };
+
+// ---------- navigation ----------
+const NAV = {
+  SIO: [['dash', 'Tableau de bord', 'grid'], ['rapport', 'Nouveau rapport', 'doc'], ['incident', 'Déclarer un incident', 'warn'], ['panne', 'Panne / maintenance', 'tool'], ['historique', 'Historique', 'clock']],
+  SIG: [['dash', 'Performances des gares', 'grid'], ['suivi', 'Incidents & maintenance', 'warn'], ['rapports', 'Rapports périodiques', 'doc']],
+  SID: [['dash', 'Tableau décisionnel', 'chart'], ['alertes', 'Centre d\'alertes', 'bell']],
+};
+const ICONS = {
+  grid: '<rect x="3" y="3" width="7" height="8" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/>',
+  doc: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
+  warn: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
+  tool: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  chart: '<path d="M3 20h18M6 16v-5M11 16V7M16 16v-8M21 16v-3"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+};
+const ico = (k, w = 18) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}">${ICONS[k]}</svg>`;
+const FLOW = ['Gare', 'SIO · collecte', 'EDI · validation', 'Base centrale', 'SIG · traitement', 'SID · analyse', 'Décision'];
+const FLOW_ON = { SIO: [0, 1], SIG: [3, 4], SID: [5, 6] };
+function go(view) { UI.view = view; UI.pop = false; save(); render(); window.scrollTo(0, 0); }
+function setRole(r) { UI.role = r; UI.view = 'dash'; UI.pop = false; save(); render(); toast(`Connecté en tant que ${USERS[r].title}`); }
+
+// ---------- charts ----------
+const charts = [];
+function killCharts() { while (charts.length) charts.pop().destroy(); }
+const C = { orange: '#F26522', gray: '#8A8A8A', grid: '#EDEDED', ink: '#555555', red: '#E30613' };
+function mkChart(id, cfg) {
+  const el = document.getElementById(id); if (!el || !window.Chart) { if (el) el.parentElement.innerHTML = '<p class="empty">Graphique indisponible (bibliothèque non chargée).</p>'; return; }
+  const base = {
+    responsive: true, maintainAspectRatio: false, animation: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1A1A1A', titleFont: { family: 'Montserrat', weight: '600' }, bodyFont: { family: 'Montserrat' }, padding: 10, cornerRadius: 6, boxPadding: 4 } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: C.ink, font: { family: 'Montserrat', size: 11 }, maxRotation: 0, autoSkip: true }, border: { color: '#D6D6D6' } },
+      y: { beginAtZero: true, grid: { color: C.grid }, ticks: { color: C.ink, font: { family: 'Montserrat', size: 11 } }, border: { display: false } },
+    },
+  };
+  const merge = (a, b) => { for (const k in b) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k]) merge(a[k], b[k]); else a[k] = b[k]; } return a; };
+  cfg.options = merge(base, cfg.options || {});
+  charts.push(new Chart(el, cfg));
+}
+const barDS = (data, color = C.orange, extra = {}) => ({ data, backgroundColor: color, borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28, ...extra });
+const lineDS = (data, color = C.orange, extra = {}) => ({ data, borderColor: color, backgroundColor: color + '1F', borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointBackgroundColor: color, tension: .3, ...extra });
+const pctTick = { callback: v => (v * 100).toFixed(0) + ' %' };
+
+// série temporelle : par jour (7/30 j) ou par semaine (au-delà)
+function series(gare, days, fn) {
+  const g = x => gare === 'all' || x.gare === gare;
+  const step = days > 45 ? 7 : 1, n = Math.ceil(days / step), start = since(days), labels = [], vals = [];
+  for (let i = 0; i < n; i++) {
+    const a = start + i * step * DAY, b = a + step * DAY;
+    const reps = DB.reports.filter(r => g(r) && repTs(r) >= a && repTs(r) < b);
+    labels.push(new Date(a).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
+    vals.push(fn(reps));
+  }
+  return { labels, vals };
+}
+const rateOf = reps => { const t = reps.reduce((a, r) => a + r.trains, 0); return t ? reps.reduce((a, r) => a + r.ret, 0) / t : null; };
+
+// =========================================================
+//  RENDU
+// =========================================================
+function render() {
+  killCharts();
+  const app = $('#app');
+  if (!UI.role) { app.innerHTML = loginView(); bindLogin(); return; }
+  const u = USERS[UI.role], al = alertsForRole().filter(a => !a.decision);
+  const nav = NAV[UI.role];
+  if (!nav.some(n => n[0] === UI.view)) UI.view = 'dash';
+  app.innerHTML = `
+  <header class="hdr">
+    <div class="logo"><span class="mk"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F26522" stroke-width="2.4" stroke-linecap="round"><path d="M7 21 10 3M17 21 14 3M8 15h8M9 9h6"/></svg></span><span>EDI · Gares<small>Centralisation & aide à la décision</small></span></div>
+    <span class="spacer"></span>
+    <label class="row" style="gap:6px;font-size:12px;font-weight:600"><span style="opacity:.9">Rôle</span>
+      <select id="role-sw" aria-label="Changer de rôle pour la démo">${['SIO', 'SIG', 'SID'].map(r => `<option value="${r}" ${r === UI.role ? 'selected' : ''}>${r} · ${USERS[r].title}</option>`).join('')}</select></label>
+    <button class="icon-btn" id="bell" aria-label="Alertes">${ico('bell')}${al.length ? `<span class="badge-count">${al.length}</span>` : ''}</button>
+    <div class="who"><b>${u.name}</b>${u.title}${u.gare ? ' · ' + ST[u.gare].name : ''}</div>
+    <button class="icon-btn" id="logout">Déconnexion</button>
+  </header>
+  ${UI.pop ? popView(al) : ''}
+  <div class="flow-wrap"><div class="flow" id="flow">${FLOW.map((f, i) => `${i ? '<span class="arrow"></span>' : ''}<span class="step ${FLOW_ON[UI.role].includes(i) ? 'on' : ''}" data-i="${i}"><i>${i + 1}</i>${f}</span>`).join('')}<span class="flow-note">Vous êtes ici : niveau <b>${UI.role}</b></span></div></div>
+  <div class="shell">
+    <nav class="side" aria-label="Menu ${UI.role}">
+      <div class="grp">${UI.role} · ${u.title}</div>
+      ${nav.map(([k, l, i]) => `<button class="nav-btn" data-view="${k}" aria-current="${UI.view === k ? 'page' : 'false'}">${ico(i)}<span>${l.split(' ')[0]}<span class="long"> ${l.split(' ').slice(1).join(' ')}</span></span></button>`).join('')}
+      <div class="side-foot"><button id="reset">Réinitialiser la démo</button><span class="muted" style="font-size:11px">Les saisies restent dans ce navigateur.</span></div>
+    </nav>
+    <main class="main" id="main">${VIEWS[UI.role][UI.view]()}</main>
+  </div>`;
+  $('#role-sw').onchange = e => setRole(e.target.value);
+  $('#logout').onclick = () => { UI.role = null; save(); render(); };
+  $('#bell').onclick = () => { UI.pop = !UI.pop; render(); };
+  $('#reset').onclick = resetDemo;
+  $$('.nav-btn').forEach(b => b.onclick = () => go(b.dataset.view));
+  $$('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+  $$('.pop [data-alert-go]').forEach(b => b.onclick = () => { const v = b.dataset.alertGo; UI.pop = false; go(NAV[UI.role].some(n => n[0] === v) ? v : (UI.role === 'SID' ? 'alertes' : 'dash')); });
+  const pc = $('#pop-close'); if (pc) pc.onclick = () => { UI.pop = false; render(); };
+  (BIND[UI.role][UI.view] || (() => { }))();
+}
+function popView(al) {
+  return `<div class="pop" role="dialog" aria-label="Alertes"><div class="pop-h"><h3>Alertes actives (${al.length})</h3><button class="link" id="pop-close">Fermer</button></div>
+  <div style="padding:4px 14px">${al.length ? `<div class="list">${al.slice(0, 8).map(a => alertLi(a, true)).join('')}</div>` : '<p class="empty">Aucune alerte active.</p>'}</div>
+  ${UI.role === 'SID' ? '<div style="padding:10px 14px;border-top:1px solid var(--line)"><button class="link" data-alert-go="alertes">Ouvrir le centre d\'alertes</button></div>' : ''}</div>`;
+}
+function alertLi(a, pop) {
+  const bar = a.sev === 'crit' ? 'crit' : a.sev === 'high' ? 'high' : 'miss';
+  return `<div class="li"><span class="bar ${bar}"></span><div><div class="row" style="gap:6px">${SEV_PILL[a.sev]}<span class="label">${ST[a.gare].name}</span></div><b style="display:block;margin-top:4px">${esc(a.title)}</b><small>${esc(a.detail)}</small></div>
+  <div class="meta">${a.cat === 'Rapport non transmis' ? '20:00' : ago(a.ts)}${pop ? `<br><button class="link" data-alert-go="${a.go}">Voir</button>` : ''}</div></div>`;
+}
+
+// ---------- CONNEXION ----------
+function loginView() {
+  const R = [
+    ['SIO', 'Directeur de gare', 'Système d\'information opérationnel', ['Saisir le rapport quotidien', 'Déclarer incidents et pannes', 'Suivre son historique']],
+    ['SIG', 'Responsable / Manager', 'Système d\'information de gestion', ['Comparer les performances des gares', 'Suivre incidents et maintenance', 'Produire des rapports périodiques']],
+    ['SID', 'Direction centrale', 'Système d\'information décisionnel', ['KPI et graphiques stratégiques', 'Détection d\'anomalies', 'Centre d\'alertes et décisions']],
+  ];
+  return `<div class="login"><div class="login-box">
+    <div class="login-top"><span class="mk"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M7 21 10 3M17 21 14 3M8 15h8M9 9h6"/></svg></span>
+      <div><h1>EDI · Gares</h1><p>Centralisation des données des gares et aide à la décision : de la saisie en gare jusqu'à la direction centrale.</p></div></div>
+    <div class="roles">${R.map(([k, t, s, l]) => `<button class="role" data-role="${k}" aria-pressed="${UI.pendingRole === k}"><span class="tag">${k}</span><h3>${t}</h3><span class="muted" style="font-size:12px">${s}</span><ul>${l.map(x => `<li>${x}</li>`).join('')}</ul></button>`).join('')}</div>
+    <form class="login-form" id="login-form">
+      <div class="field"><label for="lg-id">Identifiant de démonstration</label><input id="lg-id" value="${USERS[UI.pendingRole].id}" readonly></div>
+      <div class="field"><span class="lab">Profil</span><span style="padding:9px 0;font-weight:600">${USERS[UI.pendingRole].name} · ${USERS[UI.pendingRole].title}${USERS[UI.pendingRole].gare ? ' (' + ST[USERS[UI.pendingRole].gare].name + ')' : ''}</span></div>
+      <button class="btn primary" type="submit">Se connecter</button>
+      <p class="muted" style="grid-column:1/-1;font-size:12px">Mode démonstration : aucun mot de passe n'est demandé ni enregistré. Le rôle peut être changé à tout moment depuis l'en-tête.</p>
+    </form>
+  </div></div>`;
+}
+function bindLogin() {
+  $$('.role').forEach(b => { b.onclick = () => { UI.pendingRole = b.dataset.role; render(); }; b.ondblclick = () => setRole(b.dataset.role); });
+  $('#login-form').onsubmit = e => { e.preventDefault(); setRole(UI.pendingRole); };
+}
+
+// =========================================================
+//  NIVEAU 1 — SIO
+// =========================================================
+const G = () => USERS.SIO.gare;
+function sioDash() {
+  const g = G(), s = ST[g], tr = todayReport(g);
+  const y = DB.reports.find(r => r.gare === g && r.date === dk(new Date(Date.now() - DAY)));
+  const incO = DB.incidents.filter(x => x.gare === g && x.statut !== 'Résolu');
+  const panO = DB.pannes.filter(x => x.gare === g && x.statut !== 'Résolu');
+  const al = alertsForRole();
+  const h = new Date().getHours();
+  const kv = (v, ref, fmt = fmtN) => v == null ? '<span class="muted">à saisir</span>' : fmt(v);
+  const cmp = (v, ref, inv) => (v == null || ref == null) ? `Hier : ${ref != null ? fmtN(ref) : '—'}` : `Hier : ${fmtN(ref)}`;
+  return `
+  <div class="page-h"><div><div class="crumb">SIO › <b>Tableau de bord</b></div><h1>Gare de ${s.name}</h1><p>Activité du ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.</p></div>
+    <div class="row"><button class="btn" data-go="incident">Déclarer un incident</button><button class="btn primary" data-go="rapport">Saisir le rapport du jour</button></div></div>
+  ${tr ? `<div class="banner ok"><span class="pill ok">Transmis</span><span>Rapport du jour transmis à <b>${fmtHM(tr.ts)}</b> · accusé de réception EDI <b>${tr.ack}</b></span><span class="spacer"></span><button class="link" data-go="historique">Voir l'historique</button></div>`
+      : `<div class="banner ${h >= 20 ? 'crit' : 'warn'}">${h >= 20 ? '<span class="pill crit">En retard</span>' : '<span class="pill miss">Non transmis</span>'}<span><b>Rapport du jour non transmis.</b> ${h >= 20 ? 'L\'échéance de 20:00 est dépassée, la direction est alertée.' : 'Échéance aujourd\'hui à 20:00.'}</span><span class="spacer"></span><button class="btn primary sm" data-go="rapport">Saisir maintenant</button></div>`}
+  <div class="grid g5">
+    <div class="card kpi"><div class="label">Voyageurs</div><div class="v">${kv(tr?.voy)}</div><div class="d">${cmp(tr?.voy, y?.voy)}</div></div>
+    <div class="card kpi"><div class="label">Trains</div><div class="v">${kv(tr?.trains)}</div><div class="d">${tr ? `${tr.arr} arrivées · ${tr.dep} départs` : `Hier : ${y ? y.trains : '—'}`}</div></div>
+    <div class="card kpi"><div class="label">Retards</div><div class="v">${kv(tr?.ret)}${tr ? ` <small>${fmtP(tr.ret / tr.trains)}</small>` : ''}</div><div class="d">${tr ? fmtN(tr.min) + ' min cumulées' : `Hier : ${y ? y.ret + ' (' + fmtP(y.ret / y.trains) + ')' : '—'}`}</div></div>
+    <div class="card kpi ${incO.some(x => x.urgence === 'Critique') ? 'alert-k' : ''}"><div class="label">Incidents ouverts</div><div class="v">${incO.length}</div><div class="d">${incO.filter(x => x.urgence === 'Critique').length ? `<span class="up-bad">${incO.filter(x => x.urgence === 'Critique').length} critique(s)</span>` : 'Aucun critique'}</div></div>
+    <div class="card kpi"><div class="label">Pannes en cours</div><div class="v">${panO.length}</div><div class="d">${panO.filter(x => x.statut === 'Nouveau').length} en attente de prise en charge</div></div>
+  </div>
+  <div class="grid g-wide">
+    <div class="card"><div class="card-h"><h2>Taux de retard · 14 derniers jours</h2><div class="legend"><span><i style="background:${C.orange}"></i>${s.name}</span><span><i class="dash"></i>Moyenne réseau</span></div></div><div class="chart-box short"><canvas id="c-sio-ret" aria-label="Taux de retard sur 14 jours"></canvas></div></div>
+    <div class="card"><div class="card-h"><h2>Alertes de la gare</h2><span class="muted" style="font-size:12px">${al.length} active(s)</span></div>${al.length ? `<div class="list">${al.map(a => alertLi(a)).join('')}</div>` : '<p class="empty">Aucune alerte.</p>'}</div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><h2>Incidents récents</h2><button class="link" data-go="historique">Tout l'historique</button></div>${incList(DB.incidents.filter(x => x.gare === g).sort((a, b) => b.ts - a.ts).slice(0, 5))}</div>
+    <div class="card"><div class="card-h"><h2>Pannes et demandes de maintenance</h2><button class="link" data-go="panne">Déclarer une panne</button></div>${panList(DB.pannes.filter(x => x.gare === g).sort((a, b) => (a.statut === 'Résolu') - (b.statut === 'Résolu') || b.ts - a.ts).slice(0, 5))}</div>
+  </div>`;
+}
+function incList(items) {
+  if (!items.length) return '<p class="empty">Aucun incident.</p>';
+  return `<div class="list">${items.map(x => `<div class="li"><span class="bar ${x.statut === 'Résolu' ? 'ok' : URG_CLS[x.urgence] === 'crit' ? 'crit' : URG_CLS[x.urgence] === 'high' ? 'high' : ''}"></span>
+    <div><div class="row" style="gap:6px"><span class="pill ${URG_CLS[x.urgence]}">${x.urgence}</span><span class="pill ${STAT_CLS[x.statut]}">${x.statut}</span><span class="label">${x.type}</span></div><b style="display:block;margin-top:4px">${esc(x.description)}</b><small>${x.id}${UI.role !== 'SIO' ? ' · ' + ST[x.gare].name : ''}</small></div>
+    <div class="meta">${ago(x.ts)}</div></div>`).join('')}</div>`;
+}
+function panList(items) {
+  if (!items.length) return '<p class="empty">Aucune panne.</p>';
+  return `<div class="list">${items.map(x => `<div class="li"><span class="bar ${x.statut === 'Résolu' ? 'ok' : URG_CLS[x.urgence] === 'crit' ? 'crit' : URG_CLS[x.urgence] === 'high' ? 'high' : ''}"></span>
+    <div><div class="row" style="gap:6px"><span class="pill ${URG_CLS[x.urgence]}">${x.urgence === 'Critique' ? 'Urgente' : x.urgence}</span><span class="pill ${STAT_CLS[x.statut]}">${x.statut}</span></div><b style="display:block;margin-top:4px">${esc(x.equipement)} · ${esc(x.localisation)}</b><small>${esc(x.description)} · ${x.id}</small></div>
+    <div class="meta">${ago(x.ts)}</div></div>`).join('')}</div>`;
+}
+function bindSioDash() {
+  const g = G();
+  const a = series(g, 14, rateOf), b = series('all', 14, rateOf);
+  mkChart('c-sio-ret', { type: 'line', data: { labels: a.labels, datasets: [lineDS(a.vals, C.orange, { fill: true, label: ST[g].name, spanGaps: true }), lineDS(b.vals, C.gray, { borderDash: [4, 3], label: 'Moyenne réseau', backgroundColor: 'transparent' })] }, options: { scales: { y: { ticks: pctTick } }, plugins: { tooltip: { callbacks: { label: c => ` ${c.dataset.label} : ${fmtP(c.parsed.y)}` } } } } });
+}
+
+// ----- Nouveau rapport + pipeline EDI -----
+let ediState = null; // null | {steps:[...], msg, ok}
+function sioRapport() {
+  const g = G(), tr = todayReport(g), y = DB.reports.filter(r => r.gare === g).sort((a, b) => b.ts - a.ts)[0];
+  // valeurs d'exemple proches de la veille pour gagner du temps pendant la démo
+  const ex = tr || { voy: Math.round((y?.voy || 40000) * 1.02), arr: y?.arr || 95, dep: y?.dep || 95, ret: Math.max(1, (y?.ret || 12) - 2), min: 0 };
+  const trains = ex.arr + ex.dep; const min = ex.min || ex.ret * 14;
+  return `
+  <div class="page-h"><div><div class="crumb">SIO › <b>Nouveau rapport</b></div><h1>Rapport quotidien de la gare</h1><p>Chaque rapport est contrôlé puis transmis par EDI à la base centrale. Il alimente immédiatement les tableaux SIG et SID.</p></div></div>
+  ${tr ? `<div class="banner ok"><span class="pill ok">Déjà transmis</span><span>Le rapport d'aujourd'hui a été transmis à ${fmtHM(tr.ts)}. Cochez « Rapport correctif » pour le remplacer.</span></div>` : ''}
+  <div class="grid g2">
+    <div class="card">
+      <div class="card-h"><h2>Saisie</h2><span class="muted" style="font-size:12px">Valeurs d'exemple pré-remplies, modifiables</span></div>
+      <form class="form" id="rap-form" novalidate>
+        <div class="field"><label for="r-gare">Gare</label><input id="r-gare" value="${ST[g].name} (${ST[g].code})" readonly></div>
+        <div class="field"><label for="r-date">Date du rapport</label><input type="date" id="r-date" value="${todayKey()}" max="${todayKey()}"></div>
+        <div class="field"><label for="r-voy">Nombre de voyageurs</label><input type="number" id="r-voy" min="0" value="${ex.voy}" inputmode="numeric"></div>
+        <div class="field"><label for="r-trains">Trains (mouvements total)</label><input type="number" id="r-trains" min="0" value="${trains}" inputmode="numeric"><span class="hint">= arrivées + départs</span></div>
+        <div class="field"><label for="r-arr">Arrivées</label><input type="number" id="r-arr" min="0" value="${ex.arr}" inputmode="numeric"></div>
+        <div class="field"><label for="r-dep">Départs</label><input type="number" id="r-dep" min="0" value="${ex.dep}" inputmode="numeric"></div>
+        <div class="field"><label for="r-ret">Trains en retard</label><input type="number" id="r-ret" min="0" value="${ex.ret}" inputmode="numeric"><span class="hint">Retard ≥ 5 min à l'arrivée ou au départ</span></div>
+        <div class="field"><label for="r-min">Minutes de retard cumulées</label><input type="number" id="r-min" min="0" value="${min}" inputmode="numeric"></div>
+        <div class="field full"><label for="r-obs">Observations (facultatif)</label><textarea id="r-obs" placeholder="Ex. : forte affluence au départ du train de 18:05"></textarea></div>
+        <label class="check full"><input type="checkbox" id="r-corr" ${tr ? '' : ''}> Rapport correctif (remplace un rapport déjà transmis pour cette date)</label>
+        <div class="full row"><button class="btn primary" type="submit">Valider et transmettre par EDI</button><button class="btn" type="button" id="r-err">Tester un rapport incohérent</button></div>
+      </form>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Traitement EDI</h2><div class="seg" id="fmt"><button type="button" data-f="json" aria-pressed="${UI.ediFmt === 'json'}">JSON</button><button type="button" data-f="edifact" aria-pressed="${UI.ediFmt === 'edifact'}">EDIFACT</button></div></div>
+      <div class="edi-steps" id="edi-steps">${ediStepsHTML()}</div>
+      <div style="margin-top:14px"><div class="row" style="margin-bottom:6px"><span class="label">Message généré</span><span class="spacer"></span><span class="pill edi" id="msg-type">RAPGAR</span></div><pre class="msg" id="edi-msg"></pre></div>
+    </div>
+  </div>`;
+}
+const EDI_STEPS = [['Contrôle de format', 'Champs obligatoires, entiers positifs, date valide et non future'], ['Contrôle de cohérence', 'Arrivées + départs = trains · retards ≤ trains · minutes cohérentes'], ['Contrôle d\'unicité', 'Un seul rapport par gare et par date (sauf correctif)'], ['Génération du message EDI', 'Structure normalisée RAPGAR, horodatée et identifiée'], ['Transmission et accusé de réception', 'Intégration dans la base centrale, accusé CONTRL']];
+function ediStepsHTML() {
+  return EDI_STEPS.map((s, i) => { const st = ediState?.steps[i]; const cls = st ? st.s : ''; return `<div class="edi-step ${cls}"><span class="dot">${cls === 'pass' ? '✓' : cls === 'fail' ? '!' : i + 1}</span><div><b>${s[0]}</b><small>${st?.msg ? esc(st.msg) : s[1]}</small></div></div>`; }).join('');
+}
+function readRap() {
+  const v = id => $('#' + id).value.trim();
+  return { date: v('r-date'), voy: v('r-voy'), trains: v('r-trains'), arr: v('r-arr'), dep: v('r-dep'), ret: v('r-ret'), min: v('r-min'), obs: v('r-obs'), corr: $('#r-corr').checked };
+}
+function buildMsg(r, fmt, ref, gare) {
+  const s = ST[gare], d = (r.date || '').replace(/-/g, ''), now = new Date(), stamp = `${String(now.getFullYear()).slice(2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}:${pad(now.getHours())}${pad(now.getMinutes())}`;
+  if (fmt === 'json') return JSON.stringify({ entete: { type: 'RAPGAR', version: '1.0', reference: ref, emetteur: `GARE-${s.code}`, destinataire: 'BASE-CENTRALE', horodatage: now.toISOString().slice(0, 19), correctif: !!r.corr }, gare: { code: s.code, nom: s.name }, date: r.date, activite: { voyageurs: +r.voy, trains: +r.trains, arrivees: +r.arr, departs: +r.dep }, ponctualite: { trains_en_retard: +r.ret, minutes_retard: +r.min }, observations: r.obs || null }, null, 2);
+  const segs = [`UNB+UNOC:3+GARE-${s.code}+BASE-CENTRALE+${stamp}+${ref}'`, `UNH+${ref}+RAPGAR:1:0:EDIGAR'`, `BGM+RAP+${s.id}-${d}+${r.corr ? '5' : '9'}'`, `DTM+137:${d}:102'`, `LOC+GAR+${s.code}'`, `QTY+VOY:${r.voy}'`, `QTY+TRN:${r.trains}'`, `QTY+ARR:${r.arr}'`, `QTY+DEP:${r.dep}'`, `QTY+RET:${r.ret}'`, `QTY+MRT:${r.min}'`];
+  if (r.obs) segs.push(`FTX+AAI+++${r.obs.replace(/['+:?]/g, ' ').slice(0, 70)}'`);
+  segs.push(`UNT+${segs.length}+${ref}'`, `UNZ+1+${ref}'`);
+  return segs.join('\n');
+}
+function paintMsg() {
+  const pre = $('#edi-msg'); if (!pre) return;
+  const r = readRap(), ref = ediState?.ref || String(DB.seq.msg).padStart(6, '0');
+  const txt = buildMsg(r, UI.ediFmt, ref, G());
+  pre.innerHTML = esc(txt).replace(UI.ediFmt === 'json' ? /(&quot;[a-z_]+&quot;):/g : /^([A-Z]{3})/gm, UI.ediFmt === 'json' ? '<span class="k">$1</span>:' : '<span class="k">$1</span>');
+}
+function validateRap(r) {
+  const res = [];
+  const nums = ['voy', 'trains', 'arr', 'dep', 'ret', 'min'], bad = nums.filter(k => r[k] === '' || !/^\d+$/.test(r[k]));
+  const labels = { voy: 'voyageurs', trains: 'trains', arr: 'arrivées', dep: 'départs', ret: 'retards', min: 'minutes' };
+  if (!r.date || bad.length || r.date > todayKey()) { res.push({ s: 'fail', msg: !r.date ? 'La date est obligatoire.' : r.date > todayKey() ? 'La date ne peut pas être dans le futur.' : `Valeur manquante ou non entière : ${bad.map(k => labels[k]).join(', ')}.`, fields: bad.map(k => 'r-' + k).concat(!r.date || r.date > todayKey() ? ['r-date'] : []) }); return res; }
+  res.push({ s: 'pass', msg: 'Format conforme.' });
+  const n = Object.fromEntries(nums.map(k => [k, +r[k]]));
+  const errs = [], f = [];
+  if (n.arr + n.dep !== n.trains) { errs.push(`arrivées + départs = ${n.arr + n.dep}, différent de ${n.trains} trains`); f.push('r-arr', 'r-dep', 'r-trains'); }
+  if (n.ret > n.trains) { errs.push('plus de trains en retard que de trains'); f.push('r-ret'); }
+  if (n.ret > 0 && n.min < n.ret * 5) { errs.push(`minutes cumulées trop faibles (minimum ${n.ret * 5} pour ${n.ret} retards de 5 min ou plus)`); f.push('r-min'); }
+  if (n.ret === 0 && n.min > 0) { errs.push('des minutes de retard sans train en retard'); f.push('r-min'); }
+  if (n.voy > n.trains * 1500) { errs.push('nombre de voyageurs incompatible avec la capacité des trains'); f.push('r-voy'); }
+  if (errs.length) { res.push({ s: 'fail', msg: 'Rejeté : ' + errs.join(' ; ') + '.', fields: f }); return res; }
+  res.push({ s: 'pass', msg: 'Données cohérentes.' });
+  const dup = DB.reports.find(x => x.gare === G() && x.date === r.date);
+  if (dup && !r.corr) { res.push({ s: 'fail', msg: `Un rapport existe déjà pour le ${fmtD(r.date)} (${dup.ack}). Cochez « Rapport correctif » pour le remplacer.`, fields: ['r-date'] }); return res; }
+  res.push({ s: 'pass', msg: dup ? 'Correctif accepté : il remplacera le rapport existant.' : 'Aucun doublon.' });
+  return res;
+}
+function bindSioRapport() {
+  const form = $('#rap-form');
+  ediState = null; paintMsg();
+  $$('#rap-form input, #rap-form textarea').forEach(i => i.addEventListener('input', () => { if (['r-arr', 'r-dep'].includes(i.id)) { const a = +$('#r-arr').value || 0, d = +$('#r-dep').value || 0; $('#r-trains').value = a + d; } i.closest('.field')?.classList.remove('err'); paintMsg(); }));
+  $$('#fmt button').forEach(b => b.onclick = () => { UI.ediFmt = b.dataset.f; $$('#fmt button').forEach(x => x.setAttribute('aria-pressed', x === b)); paintMsg(); });
+  $('#r-err').onclick = () => { $('#r-ret').value = +$('#r-trains').value + 5; $('#r-min').value = 10; paintMsg(); toast('Valeurs incohérentes insérées : lancez la transmission'); };
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const btn = $('button[type=submit]', form); btn.disabled = true;
+    const r = readRap(), checks = validateRap(r), ref = String(DB.seq.msg).padStart(6, '0');
+    ediState = { steps: [], ref };
+    const flowPulse = i => { $$('#flow .step').forEach(s => s.classList.remove('pulse')); const el = $(`#flow .step[data-i="${i}"]`); if (el) { el.classList.add('pulse'); el.scrollIntoView({ block: 'nearest', inline: 'center' }); } };
+    const wait = ms => new Promise(res => setTimeout(res, ms));
+    flowPulse(1);
+    for (let i = 0; i < 5; i++) {
+      ediState.steps[i] = { s: 'run' }; $('#edi-steps').innerHTML = ediStepsHTML(); await wait(420);
+      if (i < checks.length) {
+        ediState.steps[i] = checks[i]; $('#edi-steps').innerHTML = ediStepsHTML();
+        if (checks[i].s === 'fail') { (checks[i].fields || []).forEach(f => $('#' + f)?.closest('.field')?.classList.add('err')); flowPulse(2); await wait(500); $$('#flow .step').forEach(s => s.classList.remove('pulse')); btn.disabled = false; toast('Message rejeté par l\'EDI : corrigez les champs en rouge'); return; }
+        if (i === 0) flowPulse(2);
+      } else if (i === 3) { ediState.steps[3] = { s: 'pass', msg: `Message RAPGAR n°${ref} généré (${UI.ediFmt === 'json' ? 'JSON' : 'EDIFACT'}).` }; paintMsg(); flowPulse(3); }
+      else {
+        const n = k => +r[k], ack = 'ACK-' + Math.floor(Math.random() * 9e5 + 1e5);
+        const rep = { id: `RAP-${G()}-${r.date.replace(/-/g, '')}`, gare: G(), date: r.date, voy: n('voy'), trains: n('trains'), arr: n('arr'), dep: n('dep'), ret: n('ret'), min: n('min'), obs: r.obs, ts: Date.now(), ack, ref };
+        DB.reports = DB.reports.filter(x => !(x.gare === G() && x.date === r.date)); DB.reports.push(rep); DB.seq.msg++; save();
+        ediState.steps[4] = { s: 'pass', msg: `Intégré en base centrale · accusé ${ack} reçu à ${fmtHM(Date.now())}.` };
+        for (const k of [4, 5]) { flowPulse(k); await wait(300); }
+      }
+      $('#edi-steps').innerHTML = ediStepsHTML();
+    }
+    $$('#flow .step').forEach(s => s.classList.remove('pulse'));
+    btn.disabled = false; btn.textContent = 'Transmis ✓';
+    toast('Rapport transmis : visible dès maintenant dans le SIG et le SID');
+  };
+}
+
+// ----- Déclarer un incident -----
+function sioIncident() {
+  const g = G(); const open = DB.incidents.filter(x => x.gare === g && x.statut !== 'Résolu').sort((a, b) => b.ts - a.ts);
+  return `
+  <div class="page-h"><div><div class="crumb">SIO › <b>Déclarer un incident</b></div><h1>Déclarer un incident</h1><p>L'incident est transmis par EDI (message INCIDT). Un incident critique déclenche une alerte immédiate chez le manager et la direction.</p></div></div>
+  <div class="grid g-wide">
+    <div class="card"><form class="form" id="inc-form">
+      <div class="field"><label for="i-type">Type d'incident</label><select id="i-type">${Object.keys(INC_TYPES).map(t => `<option>${t}</option>`).join('')}</select></div>
+      <div class="field"><label for="i-loc">Localisation</label><select id="i-loc">${LOCS.map(l => `<option>${l}</option>`).join('')}</select></div>
+      <div class="field full"><span class="lab" id="i-urg-l">Niveau d'urgence</span><div class="radios" role="radiogroup" aria-labelledby="i-urg-l">${URG.map((u, i) => `<label class="${u === 'Critique' ? 'u-crit' : ''}"><input type="radio" name="i-urg" id="i-urg-${i}" value="${u}" ${u === 'Moyenne' ? 'checked' : ''}>${u}</label>`).join('')}</div></div>
+      <div class="field full"><label for="i-desc">Description</label><textarea id="i-desc" placeholder="Ce qui s'est passé, où, et les mesures déjà prises">Porte automatique du passage souterrain bloquée en position fermée, voyageurs redirigés vers l'escalier nord.</textarea></div>
+      <div class="field"><label for="i-stat">Statut</label><select id="i-stat">${STATUTS.map(s => `<option>${s}</option>`).join('')}</select></div>
+      <div class="field"><label for="i-time">Heure de l'incident</label><input type="time" id="i-time" value="${fmtHM(Date.now())}"></div>
+      <div class="full row"><button class="btn primary" type="submit">Déclarer l'incident</button><span class="muted" style="font-size:12px" id="i-msg"></span></div>
+    </form></div>
+    <div class="card"><div class="card-h"><h2>Incidents ouverts de la gare</h2><span class="muted" style="font-size:12px">${open.length}</span></div>${incList(open)}</div>
+  </div>`;
+}
+function bindSioIncident() {
+  $('#inc-form').onsubmit = e => {
+    e.preventDefault();
+    const desc = $('#i-desc').value.trim(); if (desc.length < 10) { $('#i-desc').closest('.field').classList.add('err'); $('#i-msg').textContent = 'Décrivez l\'incident en au moins 10 caractères.'; return; }
+    const [hh, mm] = $('#i-time').value.split(':').map(Number); const t = new Date(); t.setHours(hh || 0, mm || 0, 0, 0);
+    const stat = $('#i-stat').value, urg = $('input[name=i-urg]:checked').value;
+    const x = { id: `INC-${String(DB.seq.inc++).padStart(4, '0')}`, gare: G(), type: $('#i-type').value, description: `${desc} (${$('#i-loc').value})`, urgence: urg, statut: stat, ts: Math.min(t.getTime(), Date.now()), resolvedAt: stat === 'Résolu' ? Date.now() : null };
+    DB.incidents.push(x); DB.seq.msg++; save();
+    toast(`${x.id} transmis par EDI${urg === 'Critique' ? ' · alerte critique envoyée au SIG et au SID' : ''}`); render();
+  };
+}
+
+// ----- Panne / maintenance -----
+function sioPanne() {
+  const g = G(); const list = DB.pannes.filter(x => x.gare === g).sort((a, b) => (a.statut === 'Résolu') - (b.statut === 'Résolu') || b.ts - a.ts).slice(0, 8);
+  return `
+  <div class="page-h"><div><div class="crumb">SIO › <b>Panne / maintenance</b></div><h1>Déclarer une panne ou demander une maintenance</h1><p>La demande part au service maintenance via le SIG. Son statut est mis à jour par le responsable et visible ici.</p></div></div>
+  <div class="grid g-wide">
+    <div class="card"><form class="form" id="pan-form">
+      <div class="field"><label for="p-eq">Équipement</label><select id="p-eq">${EQUIP.map(e => `<option>${e}</option>`).join('')}</select></div>
+      <div class="field"><label for="p-loc">Localisation</label><select id="p-loc">${LOCS.map(l => `<option>${l}</option>`).join('')}</select></div>
+      <div class="field full"><span class="lab" id="p-urg-l">Urgence</span><div class="radios" role="radiogroup" aria-labelledby="p-urg-l">${URG.map((u, i) => `<label class="${u === 'Critique' ? 'u-crit' : ''}"><input type="radio" name="p-urg" id="p-urg-${i}" value="${u}" ${u === 'Haute' ? 'checked' : ''}>${u === 'Critique' ? 'Urgente' : u}</label>`).join('')}</div><span class="hint">« Urgente » : équipement de sécurité ou d'accessibilité hors service.</span></div>
+      <div class="field full"><label for="p-desc">Description de la panne</label><textarea id="p-desc">Ascenseur bloqué au niveau -1, voyageurs à mobilité réduite orientés vers la rampe du quai 2.</textarea></div>
+      <div class="field"><span class="lab">Type de demande</span><div class="radios"><label><input type="radio" name="p-kind" id="p-kind-0" value="Corrective" checked>Corrective</label><label><input type="radio" name="p-kind" id="p-kind-1" value="Préventive">Préventive</label></div></div>
+      <div class="field"><label for="p-slot">Créneau d'intervention souhaité</label><select id="p-slot"><option>Dès que possible</option><option>Nuit (00:00–05:00)</option><option>Heures creuses (10:00–15:00)</option></select></div>
+      <div class="full row"><button class="btn primary" type="submit">Envoyer la demande</button><span class="muted" style="font-size:12px" id="p-msg"></span></div>
+    </form></div>
+    <div class="card"><div class="card-h"><h2>Suivi de mes demandes</h2></div>${panList(list)}</div>
+  </div>`;
+}
+function bindSioPanne() {
+  $('#pan-form').onsubmit = e => {
+    e.preventDefault();
+    const desc = $('#p-desc').value.trim(); if (desc.length < 10) { $('#p-desc').closest('.field').classList.add('err'); $('#p-msg').textContent = 'Décrivez la panne en au moins 10 caractères.'; return; }
+    const urg = $('input[name=p-urg]:checked').value;
+    const x = { id: `MNT-${String(DB.seq.pan++).padStart(4, '0')}`, gare: G(), equipement: $('#p-eq').value, localisation: $('#p-loc').value, description: `${desc} · ${$('input[name=p-kind]:checked').value} · ${$('#p-slot').value}`, urgence: urg, statut: 'Nouveau', ts: Date.now(), resolvedAt: null };
+    DB.pannes.push(x); DB.seq.msg++; save();
+    toast(`${x.id} envoyée au service maintenance${urg === 'Critique' ? ' · alerte panne urgente' : ''}`); render();
+  };
+}
+
+// ----- Historique -----
+function sioHist() {
+  const g = G(), days = UI.histPer, t = UI.histTab;
+  let body = '';
+  if (t === 'rap') {
+    const reps = DB.reports.filter(r => r.gare === g && inPer(repTs(r), days)).sort((a, b) => b.date.localeCompare(a.date));
+    const missing = []; for (let i = 0; i < days; i++) { const k = dk(new Date(Date.now() - i * DAY)); if (!reps.some(r => r.date === k)) missing.push(k); }
+    body = `${missing.length ? `<div class="banner warn" style="margin-bottom:12px"><span class="pill miss">Non transmis</span><span>${missing.length} jour(s) sans rapport : ${missing.slice(0, 6).map(fmtD).join(', ')}${missing.length > 6 ? '…' : ''}</span></div>` : ''}
+    <div class="tbl-wrap"><table class="t"><thead><tr><th>Date</th><th class="r">Voyageurs</th><th class="r">Trains</th><th class="r">Arr. / Dép.</th><th class="r">Retards</th><th class="r">Taux</th><th>Transmission</th></tr></thead><tbody>
+    ${reps.map(r => `<tr class="${r.ret / r.trains > .15 ? 'high-row' : ''}"><td>${fmtD(r.date)}</td><td class="r">${fmtN(r.voy)}</td><td class="r">${r.trains}</td><td class="r">${r.arr} / ${r.dep}</td><td class="r">${r.ret}</td><td class="r">${r.ret / r.trains > .15 ? `<span class="pill high">${fmtP(r.ret / r.trains)}</span>` : fmtP(r.ret / r.trains)}</td><td><span class="pill ok">Transmis ${fmtHM(r.ts)}</span> <span class="muted" style="font-size:11px">${r.ack}</span></td></tr>`).join('') || '<tr><td colspan="7" class="empty">Aucun rapport.</td></tr>'}</tbody></table></div>`;
+  } else {
+    const src = t === 'inc' ? DB.incidents : DB.pannes;
+    const rows = src.filter(x => x.gare === g && inPer(x.ts, days)).sort((a, b) => b.ts - a.ts);
+    body = `<div class="tbl-wrap"><table class="t"><thead><tr><th>Réf.</th><th>Date</th><th>${t === 'inc' ? 'Type' : 'Équipement'}</th><th>Description</th><th>Urgence</th><th>Statut</th><th class="r">Délai</th></tr></thead><tbody>
+    ${rows.map(x => `<tr class="${x.urgence === 'Critique' && x.statut !== 'Résolu' ? 'crit-row' : ''}"><td class="num">${x.id}</td><td class="num">${fmtDT(x.ts)}</td><td>${esc(t === 'inc' ? x.type : x.equipement)}</td><td>${esc(x.description)}</td><td><span class="pill ${URG_CLS[x.urgence]}">${x.urgence}</span></td><td><span class="pill ${STAT_CLS[x.statut]}">${x.statut}</span></td><td class="r">${x.resolvedAt ? dur((x.resolvedAt - x.ts) / HOUR) : '<span class="muted">' + ago(x.ts) + '</span>'}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">Rien sur cette période.</td></tr>'}</tbody></table></div>`;
+  }
+  return `
+  <div class="page-h"><div><div class="crumb">SIO › <b>Historique</b></div><h1>Historique de la gare</h1><p>Tout ce que la gare a transmis à la base centrale.</p></div>
+    <div class="seg" id="hper">${[[7, '7 jours'], [30, '30 jours'], [90, '3 mois'], [180, '6 mois']].map(([d, l]) => `<button data-d="${d}" aria-pressed="${days === d}">${l}</button>`).join('')}</div></div>
+  <div class="card"><div class="tabs" role="tablist">${[['rap', 'Rapports'], ['inc', 'Incidents'], ['pan', 'Pannes']].map(([k, l]) => `<button role="tab" data-t="${k}" aria-selected="${t === k}">${l}</button>`).join('')}</div>${body}</div>`;
+}
+function bindSioHist() {
+  $$('#hper button').forEach(b => b.onclick = () => { UI.histPer = +b.dataset.d; render(); });
+  $$('.tabs button').forEach(b => b.onclick = () => { UI.histTab = b.dataset.t; render(); });
+}
+
+// =========================================================
+//  NIVEAU 2 — SIG
+// =========================================================
+const perSeg = (id, cur, opts = [[7, '7 j'], [30, '30 j'], [180, '6 mois']]) => `<div class="seg" id="${id}">${opts.map(([d, l]) => `<button data-d="${d}" aria-pressed="${cur === d}">${l}</button>`).join('')}</div>`;
+function gareSel(id, cur) { return `<select id="${id}" class="btn" style="font-weight:600"><option value="all" ${cur === 'all' ? 'selected' : ''}>Toutes les gares</option>${STATIONS.map(s => `<option value="${s.id}" ${cur === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}</select>`; }
+function sigDash() {
+  const days = UI.period, gsel = UI.gare, A = agg(gsel, days), P = agg(gsel, days, 1);
+  const rows = STATIONS.map(s => { const a = agg(s.id, days); return { s, ...a, maint: a.pan, flag: computeAlerts().filter(x => x.gare === s.id && !x.decision) }; });
+  const k = UI.sort.k, d = UI.sort.d;
+  rows.sort((a, b) => (k === 'name' ? a.s.name.localeCompare(b.s.name) : (a[k] - b[k])) * d);
+  const th = (key, lab, r) => `<th class="sort ${r ? 'r' : ''}" data-k="${key}">${lab} ${k === key ? `<span class="arr">${d > 0 ? '▲' : '▼'}</span>` : ''}</th>`;
+  const delta = (a, b, inv) => { if (!isFinite(a) || !isFinite(b) || !b) return ''; const x = (a - b) / b; const good = inv ? x < 0 : x > 0; return `<span class="${good ? 'up-good' : 'up-bad'}">${x > 0 ? '+' : ''}${(x * 100).toFixed(0)} %</span> vs période préc.`; };
+  return `
+  <div class="page-h"><div><div class="crumb">SIG › <b>Performances des gares</b></div><h1>Performances des gares</h1><p>Données consolidées depuis la base centrale à partir des messages EDI des 8 gares.</p></div>
+    <div class="row">${gareSel('g-sel', gsel)}${perSeg('per', days)}</div></div>
+  <div class="grid g4">
+    <div class="card kpi"><div class="label">Voyageurs</div><div class="v">${fmtN(A.voy)}</div><div class="d">${delta(A.voy, P.voy)}</div></div>
+    <div class="card kpi"><div class="label">Taux de retard</div><div class="v">${fmtP(A.rate)}</div><div class="d">${delta(A.rate, P.rate, true)}</div></div>
+    <div class="card kpi ${A.incCrit && A.incOpen ? '' : ''}"><div class="label">Incidents</div><div class="v">${A.inc} <small>dont ${A.incOpen} ouverts</small></div><div class="d">${A.incCrit ? `<span class="up-bad">${A.incCrit} critique(s)</span>` : 'Aucun critique'}</div></div>
+    <div class="card kpi"><div class="label">Demandes de maintenance</div><div class="v">${A.pan} <small>dont ${A.panOpen} ouvertes</small></div><div class="d">Délai moyen de traitement : ${isFinite(A.delai) ? dur(A.delai) : '—'}</div></div>
+  </div>
+  <div class="card"><div class="card-h"><h2>Comparaison des gares · ${days} derniers jours</h2><span class="muted" style="font-size:12px">Cliquez un en-tête pour trier · une ligne pour filtrer</span></div>
+    <div class="tbl-wrap"><table class="t" id="cmp"><thead><tr>${th('name', 'Gare')}${th('voy', 'Voyageurs', 1)}${th('rate', 'Retards', 1)}${th('inc', 'Incidents', 1)}${th('maint', 'Maintenance', 1)}${th('tx', 'Rapports transmis', 1)}<th>Alertes</th></tr></thead><tbody>
+    ${rows.map(r => { const crit = r.flag.some(f => f.sev === 'crit'); return `<tr class="${crit ? 'crit-row' : r.flag.length ? 'high-row' : ''}" data-g="${r.s.id}" style="cursor:pointer;${gsel === r.s.id ? 'background:var(--orange-soft)' : ''}"><td><b>${r.s.name}</b></td><td class="r">${fmtN(r.voy)}</td><td class="r">${r.rate > .12 ? `<span class="pill high">${fmtP(r.rate)}</span>` : fmtP(r.rate)}</td><td class="r">${r.inc}${r.incOpen ? ` <span class="muted">(${r.incOpen} ouv.)</span>` : ''}</td><td class="r">${r.pan}${r.panOpen ? ` <span class="muted">(${r.panOpen} ouv.)</span>` : ''}</td><td class="r">${r.tx < .95 ? `<span class="pill miss" style="text-decoration:none">${fmtP(r.tx, 0)}</span>` : fmtP(r.tx, 0)}</td><td>${r.flag.length ? r.flag.slice(0, 2).map(f => SEV_PILL[f.sev]).join(' ') + (r.flag.length > 2 ? ` <span class="muted">+${r.flag.length - 2}</span>` : '') : '<span class="pill ok">OK</span>'}</td></tr>`; }).join('')}</tbody></table></div></div>
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><h2>Évolution du taux de retard</h2><div class="legend"><span><i style="background:${C.orange}"></i>${gsel === 'all' ? 'Toutes les gares' : ST[gsel].name}</span>${gsel !== 'all' ? '<span><i class="dash"></i>Moyenne réseau</span>' : ''}</div></div><div class="chart-box"><canvas id="c-sig-ret" aria-label="Évolution du taux de retard"></canvas></div></div>
+    <div class="card"><div class="card-h"><h2>Incidents par gare</h2><span class="muted" style="font-size:12px">${days} derniers jours</span></div><div class="chart-box"><canvas id="c-sig-inc" aria-label="Incidents par gare"></canvas></div></div>
+  </div>`;
+}
+function bindSigDash() {
+  $('#g-sel').onchange = e => { UI.gare = e.target.value; render(); };
+  $$('#per button').forEach(b => b.onclick = () => { UI.period = +b.dataset.d; render(); });
+  $$('#cmp th.sort').forEach(th => th.onclick = () => { const k = th.dataset.k; UI.sort = { k, d: UI.sort.k === k ? -UI.sort.d : -1 }; render(); });
+  $$('#cmp tbody tr').forEach(tr => tr.onclick = () => { UI.gare = UI.gare === tr.dataset.g ? 'all' : tr.dataset.g; render(); });
+  const days = UI.period, a = series(UI.gare, days, rateOf), ds = [lineDS(a.vals, C.orange, { fill: true, label: UI.gare === 'all' ? 'Toutes les gares' : ST[UI.gare].name, spanGaps: true })];
+  if (UI.gare !== 'all') ds.push(lineDS(series('all', days, rateOf).vals, C.gray, { borderDash: [4, 3], label: 'Moyenne réseau', backgroundColor: 'transparent' }));
+  mkChart('c-sig-ret', { type: 'line', data: { labels: a.labels, datasets: ds }, options: { scales: { y: { ticks: pctTick } }, plugins: { tooltip: { callbacks: { label: c => ` ${c.dataset.label} : ${fmtP(c.parsed.y)}` } } } } });
+  const inc = STATIONS.map(s => DB.incidents.filter(x => x.gare === s.id && inPer(x.ts, days)));
+  mkChart('c-sig-inc', { type: 'bar', data: { labels: STATIONS.map(s => s.name), datasets: [barDS(inc.map(l => l.length), STATIONS.map(s => UI.gare === 'all' || UI.gare === s.id ? C.orange : '#F8B894'), { label: 'Incidents' })] }, options: { interaction: { mode: 'nearest', intersect: true }, scales: { x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } }, y: { ticks: { precision: 0 } } }, plugins: { tooltip: { callbacks: { label: c => ` ${c.parsed.y} incident(s) · dont ${inc[c.dataIndex].filter(x => x.urgence === 'Critique').length} critique(s)` } } } } });
+}
+
+// ----- Suivi incidents & maintenance -----
+function sigSuivi() {
+  const F = UI.suivi;
+  const items = [...DB.incidents.map(x => ({ ...x, kind: 'inc', label: x.type })), ...DB.pannes.map(x => ({ ...x, kind: 'pan', label: x.equipement }))]
+    .filter(x => (F.kind === 'all' || x.kind === F.kind) && (F.gare === 'all' || x.gare === F.gare) && (F.urg === 'all' || x.urgence === F.urg) && (F.statut === 'all' || (F.statut === 'open' ? x.statut !== 'Résolu' : x.statut === F.statut)))
+    .sort((a, b) => URG.indexOf(b.urgence) - URG.indexOf(a.urgence) || b.ts - a.ts).slice(0, 60);
+  const openAll = [...DB.incidents, ...DB.pannes].filter(x => x.statut !== 'Résolu');
+  const sel = (id, cur, opts) => `<select id="${id}" class="btn">${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  return `
+  <div class="page-h"><div><div class="crumb">SIG › <b>Incidents & maintenance</b></div><h1>Suivi des incidents et de la maintenance</h1><p>Prenez en charge puis clôturez les dossiers. Le délai de traitement alimente le KPI de la direction.</p></div></div>
+  <div class="grid g4">
+    <div class="card kpi"><div class="label">Dossiers ouverts</div><div class="v">${openAll.length}</div></div>
+    <div class="card kpi ${openAll.some(x => x.urgence === 'Critique') ? 'alert-k' : ''}"><div class="label">Critiques / urgents</div><div class="v">${openAll.filter(x => x.urgence === 'Critique').length}</div></div>
+    <div class="card kpi"><div class="label">Nouveaux à prendre en charge</div><div class="v">${openAll.filter(x => x.statut === 'Nouveau').length}</div></div>
+    <div class="card kpi"><div class="label">Délai moyen (30 j)</div><div class="v">${isFinite(agg('all', 30).delai) ? dur(agg('all', 30).delai) : '—'}</div></div>
+  </div>
+  <div class="card">
+    <div class="row" style="margin-bottom:12px">
+      ${sel('f-kind', F.kind, [['all', 'Incidents et pannes'], ['inc', 'Incidents'], ['pan', 'Pannes / maintenance']])}
+      ${sel('f-gare', F.gare, [['all', 'Toutes les gares'], ...STATIONS.map(s => [s.id, s.name])])}
+      ${sel('f-stat', F.statut, [['open', 'Ouverts'], ['all', 'Tous statuts'], ...STATUTS.map(s => [s, s])])}
+      ${sel('f-urg', F.urg, [['all', 'Toutes urgences'], ...URG.map(u => [u, u])])}
+      <span class="spacer"></span><span class="muted" style="font-size:12px">${items.length} dossier(s)${items.length === 60 ? ' (60 premiers)' : ''}</span>
+    </div>
+    <div class="tbl-wrap"><table class="t"><thead><tr><th>Réf.</th><th>Gare</th><th>Objet</th><th>Urgence</th><th>Statut</th><th class="r">Ouvert</th><th>Action</th></tr></thead><tbody>
+    ${items.map(x => `<tr class="${x.urgence === 'Critique' && x.statut !== 'Résolu' ? 'crit-row' : x.urgence === 'Haute' && x.statut !== 'Résolu' ? 'high-row' : ''}">
+      <td class="num"><b>${x.id}</b></td><td>${ST[x.gare].name}</td><td><b style="font-weight:600">${esc(x.label)}</b><div class="muted" style="font-size:12px">${esc(x.description)}</div></td>
+      <td><span class="pill ${URG_CLS[x.urgence]}">${x.kind === 'pan' && x.urgence === 'Critique' ? 'Urgente' : x.urgence}</span></td><td><span class="pill ${STAT_CLS[x.statut]}">${x.statut}</span></td>
+      <td class="r" style="white-space:nowrap">${x.resolvedAt ? `résolu en ${dur((x.resolvedAt - x.ts) / HOUR)}` : ago(x.ts)}</td>
+      <td style="white-space:nowrap">${x.statut === 'Nouveau' ? `<button class="btn sm" data-act="take" data-id="${x.id}">Prendre en charge</button>` : x.statut === 'En cours' ? `<button class="btn sm ok" data-act="close" data-id="${x.id}">Clôturer</button>` : '<span class="muted" style="font-size:12px">Clôturé</span>'}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">Aucun dossier ne correspond aux filtres.</td></tr>'}</tbody></table></div>
+  </div>`;
+}
+function bindSigSuivi() {
+  const map = { 'f-kind': 'kind', 'f-gare': 'gare', 'f-stat': 'statut', 'f-urg': 'urg' };
+  Object.entries(map).forEach(([id, k]) => $('#' + id).onchange = e => { UI.suivi[k] = e.target.value; render(); });
+  $$('[data-act]').forEach(b => b.onclick = () => {
+    const id = b.dataset.id, x = [...DB.incidents, ...DB.pannes].find(y => y.id === id);
+    if (b.dataset.act === 'take') { x.statut = 'En cours'; toast(`${id} pris en charge`); }
+    else { x.statut = 'Résolu'; x.resolvedAt = Date.now(); toast(`${id} clôturé en ${dur((x.resolvedAt - x.ts) / HOUR)}`); }
+    save(); render();
+  });
+}
+
+// ----- Rapports périodiques -----
+let rpt = { gare: 'all', from: null, to: null };
+function sigRapports() {
+  if (!rpt.from) { rpt.to = todayKey(); rpt.from = dk(new Date(Date.now() - 29 * DAY)); }
+  const a = new Date(rpt.from + 'T00:00').getTime(), b = new Date(rpt.to + 'T23:59').getTime();
+  const days = Math.max(1, Math.round((b - a) / DAY));
+  const g = x => rpt.gare === 'all' || x.gare === rpt.gare;
+  const reps = DB.reports.filter(r => g(r) && r.date >= rpt.from && r.date <= rpt.to);
+  const inc = DB.incidents.filter(x => g(x) && x.ts >= a && x.ts <= b), pan = DB.pannes.filter(x => g(x) && x.ts >= a && x.ts <= b);
+  const sum = k => reps.reduce((s, r) => s + r[k], 0), nG = rpt.gare === 'all' ? 8 : 1;
+  const res = [...inc, ...pan].filter(x => x.resolvedAt), del = res.length ? res.reduce((s, x) => s + (x.resolvedAt - x.ts) / HOUR, 0) / res.length : NaN;
+  const net = DB.reports.filter(r => r.date >= rpt.from && r.date <= rpt.to), netRate = net.reduce((s, r) => s + r.ret, 0) / net.reduce((s, r) => s + r.trains, 0);
+  const byType = {}; inc.forEach(x => byType[x.type] = (byType[x.type] || 0) + 1);
+  const topType = Object.entries(byType).sort((x, y) => y[1] - x[1])[0];
+  const perG = STATIONS.map(s => { const rr = DB.reports.filter(r => r.gare === s.id && r.date >= rpt.from && r.date <= rpt.to); const t = rr.reduce((q, r) => q + r.trains, 0); return { s, rate: t ? rr.reduce((q, r) => q + r.ret, 0) / t : 0, tx: rr.length / days }; });
+  const worst = [...perG].sort((x, y) => y.rate - x.rate)[0];
+  const name = rpt.gare === 'all' ? 'Réseau (8 gares)' : ST[rpt.gare].name;
+  const rate = sum('ret') / sum('trains');
+  const txt = `SYNTHÈSE PÉRIODIQUE · ${name}
+Période : du ${fmtD(rpt.from)} au ${fmtD(rpt.to)} (${days} jours)
+
+Activité
+• Voyageurs : ${fmtN(sum('voy'))}
+• Trains : ${fmtN(sum('trains'))} (${fmtN(sum('arr'))} arrivées, ${fmtN(sum('dep'))} départs)
+
+Ponctualité
+• Taux de retard : ${fmtP(rate)}${rpt.gare !== 'all' ? ` (moyenne réseau ${fmtP(netRate)})` : ''}
+• Minutes de retard cumulées : ${fmtN(sum('min'))}
+
+Incidents et maintenance
+• Incidents : ${inc.length}, dont ${inc.filter(x => x.urgence === 'Critique').length} critique(s), ${inc.filter(x => x.statut === 'Résolu').length} résolu(s)
+• Demandes de maintenance : ${pan.length}, dont ${pan.filter(x => x.statut === 'Résolu').length} résolue(s)
+• Délai moyen de traitement : ${isFinite(del) ? dur(del) : 'n/d'}
+${topType ? `• Type d'incident le plus fréquent : ${topType[0]} (${topType[1]})` : ''}
+
+Qualité de la remontée EDI
+• Rapports transmis : ${reps.length} / ${nG * days} (${fmtP(reps.length / (nG * days), 0)})
+
+Points d'attention
+${rpt.gare === 'all' ? `• Gare la moins ponctuelle : ${worst.s.name} (${fmtP(worst.rate)})` : rate > netRate ? `• Taux de retard supérieur de ${((rate - netRate) * 100).toFixed(1).replace('.', ',')} pt à la moyenne réseau` : '• Ponctualité meilleure que la moyenne réseau'}
+${[...inc, ...pan].filter(x => x.statut !== 'Résolu').length ? `• ${[...inc, ...pan].filter(x => x.statut !== 'Résolu').length} dossier(s) encore ouvert(s) en fin de période` : '• Aucun dossier ouvert en fin de période'}`;
+  return `
+  <div class="page-h"><div><div class="crumb">SIG › <b>Rapports périodiques</b></div><h1>Rapports périodiques</h1><p>Choisissez une gare et une période : la synthèse se calcule à partir de la base centrale.</p></div></div>
+  <div class="card"><div class="row" style="gap:14px;align-items:flex-end">
+    <div class="field"><label for="rp-g">Gare</label>${gareSel('rp-g', rpt.gare)}</div>
+    <div class="field"><label for="rp-from">Du</label><input type="date" id="rp-from" value="${rpt.from}" max="${todayKey()}"></div>
+    <div class="field"><label for="rp-to">Au</label><input type="date" id="rp-to" value="${rpt.to}" max="${todayKey()}"></div>
+    <div class="seg" id="rp-quick"><button data-q="7">Semaine</button><button data-q="30">Mois</button><button data-q="90">Trimestre</button></div>
+  </div></div>
+  <div class="grid g-wide">
+    <div class="card"><div class="card-h"><h2>Synthèse</h2><button class="btn primary sm" id="rp-copy">Copier la synthèse</button></div><div class="synth" id="rp-txt">${esc(txt)}</div></div>
+    <div class="card"><div class="card-h"><h2>Détail par gare</h2></div><div class="tbl-wrap"><table class="t"><thead><tr><th>Gare</th><th class="r">Retards</th><th class="r">Rapports</th></tr></thead><tbody>
+    ${perG.map(p => `<tr style="${rpt.gare === p.s.id ? 'background:var(--orange-soft)' : ''}"><td>${p.s.name}</td><td class="r">${p.rate > .12 ? `<span class="pill high">${fmtP(p.rate)}</span>` : fmtP(p.rate)}</td><td class="r">${fmtP(Math.min(1, p.tx), 0)}</td></tr>`).join('')}</tbody></table></div></div>
+  </div>`;
+}
+function bindSigRapports() {
+  $('#rp-g').onchange = e => { rpt.gare = e.target.value; render(); };
+  $('#rp-from').onchange = e => { rpt.from = e.target.value; if (rpt.from > rpt.to) rpt.to = rpt.from; render(); };
+  $('#rp-to').onchange = e => { rpt.to = e.target.value; if (rpt.to < rpt.from) rpt.from = rpt.to; render(); };
+  $$('#rp-quick button').forEach(b => b.onclick = () => { rpt.to = todayKey(); rpt.from = dk(new Date(Date.now() - (+b.dataset.q - 1) * DAY)); render(); });
+  $('#rp-copy').onclick = () => { const t = $('#rp-txt').textContent; navigator.clipboard?.writeText(t).then(() => toast('Synthèse copiée'), () => selectTxt()); if (!navigator.clipboard) selectTxt(); };
+  function selectTxt() { const r = document.createRange(); r.selectNodeContents($('#rp-txt')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Texte sélectionné : faites Ctrl+C'); }
+}
+
+// =========================================================
+//  NIVEAU 3 — SID
+// =========================================================
+function sidDash() {
+  const days = UI.sidPer, A = agg('all', days), P = agg('all', days, 1), al = computeAlerts().filter(a => !a.decision);
+  const trend = (a, b, inv, fmt) => { if (!isFinite(a) || !isFinite(b) || !b) return '<span class="muted">—</span>'; const x = (a - b) / b; const good = inv ? x <= 0 : x >= 0; return `<span class="${good ? 'up-good' : 'up-bad'}">${x > 0 ? '▲' : '▼'} ${Math.abs(x * 100).toFixed(0)} %</span> vs période préc.`; };
+  return `
+  <div class="page-h"><div><div class="crumb">SID › <b>Tableau décisionnel</b></div><h1>Vision stratégique du réseau</h1><p>Indicateurs consolidés des 8 gares, alimentés en continu par les flux EDI.</p></div>${perSeg('sper', days, [[30, '30 jours'], [90, '3 mois'], [180, '6 mois']])}</div>
+  ${al.some(a => a.sev === 'crit') ? `<div class="banner crit"><span class="pill crit">${al.filter(a => a.sev === 'crit').length} critique(s)</span><span><b>${esc(al.find(a => a.sev === 'crit').title)}</b> · ${ST[al.find(a => a.sev === 'crit').gare].name}</span><span class="spacer"></span><button class="btn primary sm" data-go="alertes">Ouvrir le centre d'alertes</button></div>` : ''}
+  <div class="grid g6">
+    <div class="card kpi"><div class="label">Taux de retard</div><div class="v">${fmtP(A.rate)}</div><div class="d">${trend(A.rate, P.rate, true)}</div></div>
+    <div class="card kpi ${A.incCrit ? '' : ''}"><div class="label">Incidents · critiques</div><div class="v">${A.inc} <small>· <span style="color:var(--red)">${A.incCrit}</span></small></div><div class="d">${trend(A.inc, P.inc, true)}</div></div>
+    <div class="card kpi"><div class="label">Voyageurs</div><div class="v">${A.voy > 1e6 ? (A.voy / 1e6).toFixed(2).replace('.', ',') + ' <small>M</small>' : fmtN(A.voy)}</div><div class="d">${trend(A.voy, P.voy)}</div></div>
+    <div class="card kpi ${A.tx < .95 ? 'alert-k' : ''}"><div class="label">Rapports transmis</div><div class="v">${fmtP(A.tx, 1)}</div><div class="d">${A.reps} / ${A.expected} attendus</div></div>
+    <div class="card kpi"><div class="label">Pannes</div><div class="v">${A.pan}</div><div class="d">${trend(A.pan, P.pan, true)}</div></div>
+    <div class="card kpi"><div class="label">Délai moyen de traitement</div><div class="v">${isFinite(A.delai) ? dur(A.delai) : '—'}</div><div class="d">${trend(A.delai, P.delai, true)}</div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><h2>Évolution mensuelle du taux de retard</h2><span class="muted" style="font-size:12px">6 derniers mois</span></div><div class="chart-box"><canvas id="c-sid-m" aria-label="Taux de retard mensuel"></canvas></div></div>
+    <div class="card"><div class="card-h"><h2>Incidents et pannes par mois</h2><div class="legend"><span><i style="background:${C.orange};height:10px;width:10px"></i>Incidents</span><span><i style="background:#1A1A1A;height:10px;width:10px"></i>Pannes</span></div></div><div class="chart-box"><canvas id="c-sid-ip" aria-label="Incidents et pannes par mois"></canvas></div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><h2>Comparaison des gares · taux de retard</h2><div class="legend"><span><i class="dash"></i>Moyenne réseau ${fmtP(A.rate)}</span></div></div><div class="chart-box"><canvas id="c-sid-g" aria-label="Comparaison des gares"></canvas></div></div>
+    <div class="card"><div class="card-h"><h2>Répartition des problèmes</h2><span class="muted" style="font-size:12px">${days} derniers jours</span></div><div class="chart-box"><canvas id="c-sid-t" aria-label="Répartition des problèmes par type"></canvas></div></div>
+  </div>
+  <div class="card"><div class="card-h"><h2>Dernières alertes</h2><button class="link" data-go="alertes">Tout voir et décider</button></div>${al.length ? `<div class="list">${al.slice(0, 4).map(a => alertLi(a)).join('')}</div>` : '<p class="empty">Aucune alerte active.</p>'}</div>`;
+}
+function monthly() {
+  const out = []; const n = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(n.getFullYear(), n.getMonth() - i, 1), key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+    const reps = DB.reports.filter(r => r.date.startsWith(key));
+    const inM = x => { const t = new Date(x.ts); return t.getFullYear() === d.getFullYear() && t.getMonth() === d.getMonth(); };
+    out.push({ label: d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '') + (i === 0 ? ' (en cours)' : ''), rate: rateOf(reps), inc: DB.incidents.filter(inM).length, pan: DB.pannes.filter(inM).length });
+  }
+  return out;
+}
+function bindSidDash() {
+  $$('#sper button').forEach(b => b.onclick = () => { UI.sidPer = +b.dataset.d; render(); });
+  const m = monthly();
+  mkChart('c-sid-m', { type: 'line', data: { labels: m.map(x => x.label), datasets: [lineDS(m.map(x => x.rate), C.orange, { fill: true, pointRadius: 4, label: 'Taux de retard' })] }, options: { scales: { y: { ticks: pctTick } }, plugins: { tooltip: { callbacks: { label: c => ` Taux de retard : ${fmtP(c.parsed.y)}` } } } } });
+  mkChart('c-sid-ip', { type: 'bar', data: { labels: m.map(x => x.label), datasets: [barDS(m.map(x => x.inc), C.orange, { label: 'Incidents' }), barDS(m.map(x => x.pan), '#1A1A1A', { label: 'Pannes' })] }, options: { datasets: { bar: { categoryPercentage: .7, barPercentage: .9 } }, scales: { y: { ticks: { precision: 0 } } } } });
+  const days = UI.sidPer, A = agg('all', days), rows = STATIONS.map(s => ({ s, r: agg(s.id, days).rate })).sort((a, b) => b.r - a.r);
+  mkChart('c-sid-g', { type: 'bar', data: { labels: rows.map(x => x.s.name), datasets: [barDS(rows.map(x => x.r), rows.map(x => x.r > A.rate ? C.orange : '#F8B894'), { label: 'Taux de retard', order: 2 }), { type: 'line', data: rows.map(() => A.rate), borderColor: C.gray, borderDash: [4, 3], borderWidth: 1.5, pointRadius: 0, label: 'Moyenne réseau', order: 1 }] }, options: { indexAxis: 'y', interaction: { mode: 'nearest', axis: 'y', intersect: false }, scales: { x: { beginAtZero: true, grid: { color: C.grid, display: true }, ticks: pctTick }, y: { grid: { display: false } } }, plugins: { tooltip: { callbacks: { label: c => ` ${c.dataset.label} : ${fmtP(c.parsed.x)}` } } } } });
+  const cnt = {}; DB.incidents.filter(x => inPer(x.ts, days)).forEach(x => cnt[x.type] = (cnt[x.type] || 0) + 1);
+  cnt['Pannes d\'équipement'] = DB.pannes.filter(x => inPer(x.ts, days)).length;
+  const late = DB.reports.filter(r => inPer(repTs(r), days) && r.ret / r.trains > .15).length; cnt['Journées à retards importants'] = late;
+  const t = Object.entries(cnt).sort((a, b) => b[1] - a[1]);
+  mkChart('c-sid-t', { type: 'bar', data: { labels: t.map(x => x[0]), datasets: [barDS(t.map(x => x[1]), C.orange, { label: 'Occurrences' })] }, options: { indexAxis: 'y', interaction: { mode: 'nearest', axis: 'y', intersect: false }, scales: { x: { grid: { color: C.grid, display: true }, ticks: { precision: 0 } }, y: { grid: { display: false } } } } });
+}
+
+// ----- Centre d'alertes -----
+const DECISIONS = ['Renfort de personnel en gare', 'Maintenance prioritaire', 'Audit de la gare', 'Rappel à l\'ordre (transmission EDI)', 'Ajustement du plan de transport', 'Classer sans suite'];
+let decOpen = null;
+function sidAlertes() {
+  const all = computeAlerts(), F = UI.alertF;
+  const list = all.filter(a => F === 'all' ? true : F === 'open' ? !a.decision : F === 'done' ? !!a.decision : a.sev === F);
+  const cnt = s => all.filter(a => a.sev === s && !a.decision).length;
+  return `
+  <div class="page-h"><div><div class="crumb">SID › <b>Centre d'alertes</b></div><h1>Centre d'alertes et détection d'anomalies</h1><p>Les règles tournent en continu sur la base centrale. Chaque alerte peut donner lieu à une décision, dernière étape du flux EDI.</p></div></div>
+  <div class="grid g4">
+    <div class="card kpi ${cnt('crit') ? 'alert-k' : ''}"><div class="label">Critiques</div><div class="v" style="color:var(--red)">${cnt('crit')}</div></div>
+    <div class="card kpi"><div class="label">Importantes</div><div class="v" style="color:var(--orange-d)">${cnt('high')}</div></div>
+    <div class="card kpi"><div class="label">Rapports non transmis</div><div class="v">${all.filter(a => a.cat === 'Rapport non transmis').length}</div></div>
+    <div class="card kpi"><div class="label">Décisions prises</div><div class="v" style="color:var(--green)">${DB.decisions.length}</div></div>
+  </div>
+  <div class="grid g-wide">
+    <div class="card">
+      <div class="card-h"><div class="seg" id="af">${[['open', 'À traiter'], ['crit', 'Critiques'], ['high', 'Importantes'], ['done', 'Traitées'], ['all', 'Toutes']].map(([k, l]) => `<button data-f="${k}" aria-pressed="${F === k}">${l}</button>`).join('')}</div><span class="muted" style="font-size:12px">${list.length} alerte(s)</span></div>
+      ${list.length ? `<div class="list">${list.map(a => `<div class="li"><span class="bar ${a.decision ? 'ok' : a.sev === 'crit' ? 'crit' : a.sev === 'high' ? 'high' : 'miss'}"></span>
+        <div><div class="row" style="gap:6px">${a.decision ? '<span class="pill ok">Décision prise</span>' : SEV_PILL[a.sev]}<span class="label">${a.cat} · ${ST[a.gare].name}</span></div>
+          <b style="display:block;margin-top:4px">${esc(a.title)}</b><small>${esc(a.detail)}</small>
+          ${a.decision ? `<small style="margin-top:4px;color:#1E7A25"><b>${esc(a.decision.type)}</b>${a.decision.note ? ' · ' + esc(a.decision.note) : ''} · ${fmtDT(a.decision.ts)}</small>` : decOpen === a.key ? `<form class="decision" data-key="${a.key}"><div class="field"><label for="d-type">Décision</label><select id="d-type">${DECISIONS.map(d => `<option>${d}</option>`).join('')}</select></div><div class="field"><label for="d-note">Commentaire</label><input id="d-note" placeholder="Ex. : 2 agents supplémentaires ce week-end"></div><div class="row"><button class="btn primary sm" type="submit">Enregistrer</button><button class="btn sm" type="button" data-cancel>Annuler</button></div></form>` : ''}
+        </div>
+        <div class="meta">${a.cat === 'Rapport non transmis' ? 'échéance 20:00' : ago(a.ts)}${!a.decision && decOpen !== a.key ? `<br><button class="btn sm primary" style="margin-top:6px" data-dec="${a.key}">Prendre une décision</button>` : ''}</div></div>`).join('')}</div>` : '<p class="empty">Aucune alerte dans cette catégorie.</p>'}
+    </div>
+    <div class="grid" style="align-content:start">
+      <div class="card"><div class="card-h"><h2>Règles de détection</h2></div><div class="rules">
+        <div><span class="pill crit">Critique</span><span>Incident critique ouvert, et « non traité » au-delà de 2 h</span></div>
+        <div><span class="pill crit">Critique</span><span>Panne urgente d'un équipement de sécurité ou d'accessibilité</span></div>
+        <div><span class="pill high">Important</span><span>Retards importants : plus de 15 % des trains dans le dernier rapport</span></div>
+        <div><span class="pill high">Important</span><span>Anomalie : taux de retard des 7 derniers jours supérieur à la moyenne des 24 semaines précédentes + 2 écarts-types</span></div>
+        <div><span class="pill miss">Non transmis</span><span>Rapport du jour absent (devient critique après 20:00)</span></div>
+      </div></div>
+      <div class="card"><div class="card-h"><h2>Anomalies · score z par gare</h2></div><div class="tbl-wrap"><table class="t"><thead><tr><th>Gare</th><th class="r">7 j</th><th class="r">Moyenne</th><th class="r">z</th></tr></thead><tbody>
+        ${STATIONS.map(s => ({ s, a: weeklyAnomaly(s.id) })).sort((x, y) => y.a.z - x.a.z).map(({ s, a }) => `<tr class="${a.anomaly ? 'high-row' : ''}"><td>${s.name}</td><td class="r">${fmtP(a.cur)}</td><td class="r">${fmtP(a.m)}</td><td class="r">${a.anomaly ? `<span class="pill high">${a.z.toFixed(1).replace('.', ',')}</span>` : a.z.toFixed(1).replace('.', ',')}</td></tr>`).join('')}</tbody></table></div></div>
+      <div class="card"><div class="card-h"><h2>Journal des décisions</h2></div>${DB.decisions.length ? `<div class="list">${[...DB.decisions].reverse().slice(0, 6).map(d => `<div class="li"><span class="bar ok"></span><div><b>${esc(d.type)}</b><small>${ST[d.gare].name} · ${esc(d.title)}${d.note ? ' · ' + esc(d.note) : ''}</small></div><div class="meta">${fmtDT(d.ts)}</div></div>`).join('')}</div>` : '<p class="empty">Aucune décision enregistrée.</p>'}</div>
+    </div>
+  </div>`;
+}
+function bindSidAlertes() {
+  $$('#af button').forEach(b => b.onclick = () => { UI.alertF = b.dataset.f; decOpen = null; render(); });
+  $$('[data-dec]').forEach(b => b.onclick = () => { decOpen = b.dataset.dec; render(); $('#d-type')?.focus(); });
+  $$('[data-cancel]').forEach(b => b.onclick = () => { decOpen = null; render(); });
+  $$('form.decision').forEach(f => f.onsubmit = e => {
+    e.preventDefault(); const a = computeAlerts().find(x => x.key === f.dataset.key);
+    DB.decisions.push({ key: a.key, gare: a.gare, title: a.title, type: $('#d-type').value, note: $('#d-note').value.trim(), ts: Date.now() });
+    decOpen = null; save(); toast('Décision enregistrée et diffusée à la gare concernée'); render();
+  });
+}
+
+// ---------- tables de routage ----------
+const VIEWS = { SIO: { dash: sioDash, rapport: sioRapport, incident: sioIncident, panne: sioPanne, historique: sioHist }, SIG: { dash: sigDash, suivi: sigSuivi, rapports: sigRapports }, SID: { dash: sidDash, alertes: sidAlertes } };
+const BIND = { SIO: { dash: bindSioDash, rapport: bindSioRapport, incident: bindSioIncident, panne: bindSioPanne, historique: bindSioHist }, SIG: { dash: bindSigDash, suivi: bindSigSuivi, rapports: bindSigRapports }, SID: { dash: bindSidDash, alertes: bindSidAlertes } };
+if (window.Chart) { Chart.defaults.font.family = 'Montserrat, system-ui, sans-serif'; Chart.defaults.color = '#555555'; }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && UI.pop) { UI.pop = false; render(); } });
+render();
+</script>
+
+</body>
+</html>
